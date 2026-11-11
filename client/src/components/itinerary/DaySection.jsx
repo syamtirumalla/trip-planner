@@ -1,10 +1,57 @@
 import React from 'react';
-import { StopCard } from './StopCard.jsx';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableStop } from './SortableStop.jsx';
 import { formatDuration } from '../../utils/time.js';
 
-export function DaySection({ day, onRemoveStop }) {
+export function DaySection({
+  day,
+  allDays = [],
+  onRemoveStop,
+  onReorderStops,
+  onMoveToDay,
+}) {
   const stopCount = day.stops ? day.stops.length : 0;
   const totalDuration = formatDuration(day.totalDurationMin || 0);
+
+  // Configure pointer, touch, and keyboard sensors
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 6, // Prevents accidental drag when clicking
+    },
+  });
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 200,
+      tolerance: 5,
+    },
+  });
+
+  const keyboardSensor = useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates,
+  });
+
+  const sensors = useSensors(pointerSensor, touchSensor, keyboardSensor);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      onReorderStops(day.id, active.id, over.id);
+    }
+  };
 
   return (
     <section
@@ -71,7 +118,7 @@ export function DaySection({ day, onRemoveStop }) {
         </div>
       </div>
 
-      {/* Stop Cards List */}
+      {/* Stop Cards List with dnd-kit Sortable Context */}
       <div style={{ padding: '16px' }}>
         {stopCount === 0 ? (
           <div
@@ -87,13 +134,32 @@ export function DaySection({ day, onRemoveStop }) {
             No stops in this day.
           </div>
         ) : (
-          day.stops.map((stop) => (
-            <StopCard
-              key={stop.id}
-              stop={stop}
-              onRemove={(stopId) => onRemoveStop(day.id, stopId)}
-            />
-          ))
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            accessibility={{
+              screenReaderInstructions: {
+                draggable: 'To pick up a draggable item, press space or enter. While dragging, use arrow keys to move. Press space or enter again to drop, or escape to cancel.',
+              },
+            }}
+          >
+            <SortableContext
+              items={day.stops.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {day.stops.map((stop) => (
+                <SortableStop
+                  key={stop.id}
+                  stop={stop}
+                  currentDayId={day.id}
+                  allDays={allDays}
+                  onRemove={onRemoveStop}
+                  onMoveToDay={onMoveToDay}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </section>

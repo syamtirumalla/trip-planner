@@ -8,6 +8,8 @@ import {
   dismissWarnings as dismissWarningsAction,
   removeStop as removeStopAction,
   restoreStop as restoreStopAction,
+  reorderStops as reorderStopsAction,
+  moveStopToDay as moveStopToDayAction,
   updateItinerary as updateItineraryAction,
   resetPlanner,
 } from '../state/plannerActions.js';
@@ -68,7 +70,6 @@ export function useTripPlanner() {
         return;
       }
 
-      // Re-validate server response on the client using shared Zod schema
       const clientValidation = PlanResponseSchema.safeParse(json);
       if (!clientValidation.success) {
         console.error('[Client Validation Failed]:', clientValidation.error);
@@ -83,7 +84,6 @@ export function useTripPlanner() {
 
       const { itinerary, warnings } = clientValidation.data;
 
-      // Assign trusted client-side IDs (crypto.randomUUID) after validation
       const assignedItinerary = {
         ...itinerary,
         id: generateId(),
@@ -144,7 +144,6 @@ export function useTripPlanner() {
 
   /**
    * Removes a stop and creates a 6-second undo toast.
-   * Handles multiple rapid removals gracefully by stacking toasts.
    */
   const removeStopWithUndo = useCallback(
     (dayId, stopId) => {
@@ -190,7 +189,21 @@ export function useTripPlanner() {
   }, []);
 
   /**
-   * Updates itinerary (e.g. after reordering).
+   * Reorders stops within a single day.
+   */
+  const reorderStops = useCallback((dayId, activeStopId, overStopId) => {
+    dispatch(reorderStopsAction(dayId, activeStopId, overStopId));
+  }, []);
+
+  /**
+   * Moves a stop from one day to another.
+   */
+  const moveStopToDay = useCallback((fromDayId, toDayId, stopId) => {
+    dispatch(moveStopToDayAction(fromDayId, toDayId, stopId));
+  }, []);
+
+  /**
+   * Updates itinerary.
    */
   const updateItinerary = useCallback((newItinerary) => {
     dispatch(updateItineraryAction(newItinerary));
@@ -214,6 +227,8 @@ export function useTripPlanner() {
     removeStop: removeStopWithUndo,
     undoRemoval,
     dismissToast,
+    reorderStops,
+    moveStopToDay,
     updateItinerary,
     reset,
   };

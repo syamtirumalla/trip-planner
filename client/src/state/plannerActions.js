@@ -7,6 +7,8 @@ export const PLANNER_ACTIONS = {
   RESET: 'RESET',
   REMOVE_STOP: 'REMOVE_STOP',
   RESTORE_STOP: 'RESTORE_STOP',
+  REORDER_STOPS: 'REORDER_STOPS',
+  MOVE_STOP_TO_DAY: 'MOVE_STOP_TO_DAY',
   UPDATE_ITINERARY: 'UPDATE_ITINERARY',
 };
 
@@ -61,6 +63,20 @@ export function restoreStop(dayId, stop, index) {
   return {
     type: PLANNER_ACTIONS.RESTORE_STOP,
     payload: { dayId, stop, index },
+  };
+}
+
+export function reorderStops(dayId, activeStopId, overStopId) {
+  return {
+    type: PLANNER_ACTIONS.REORDER_STOPS,
+    payload: { dayId, activeStopId, overStopId },
+  };
+}
+
+export function moveStopToDay(fromDayId, toDayId, stopId) {
+  return {
+    type: PLANNER_ACTIONS.MOVE_STOP_TO_DAY,
+    payload: { fromDayId, toDayId, stopId },
   };
 }
 

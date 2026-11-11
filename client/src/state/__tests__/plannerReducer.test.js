@@ -213,4 +213,94 @@ describe('plannerReducer (Pure State Machine & Stale Response Protection)', () =
     expect(stops[2].name).toBe('Pantheon');
     expect(stops[2].startTime).toBe('11:30');
   });
+
+  it('reorders stops within a day and updates derived start times', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Kyoto',
+        days: [
+          {
+            id: 'day-1',
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              { id: 'stop-a', name: 'Stop A', durationMin: 60, startTime: '09:00' }, // 09:00 - 10:00
+              { id: 'stop-b', name: 'Stop B', durationMin: 30, startTime: '10:00' }, // 10:00 - 10:30
+              { id: 'stop-c', name: 'Stop C', durationMin: 45, startTime: '10:30' }, // 10:30 - 11:15
+            ],
+          },
+        ],
+      },
+    };
+
+    // Move Stop C (45m) to the top (over Stop A)
+    const state = plannerReducer(initialState, {
+      type: 'REORDER_STOPS',
+      payload: { dayId: 'day-1', activeStopId: 'stop-c', overStopId: 'stop-a' },
+    });
+
+    const stops = state.itinerary.days[0].stops;
+    expect(stops).toHaveLength(3);
+    expect(stops[0].name).toBe('Stop C');
+    expect(stops[0].startTime).toBe('09:00'); // Starts at 09:00
+    expect(stops[0].endTime).toBe('09:45');
+
+    expect(stops[1].name).toBe('Stop A');
+    expect(stops[1].startTime).toBe('09:45'); // Starts after Stop C
+    expect(stops[1].endTime).toBe('10:45');
+
+    expect(stops[2].name).toBe('Stop B');
+    expect(stops[2].startTime).toBe('10:45'); // Starts after Stop A
+    expect(stops[2].endTime).toBe('11:15');
+  });
+
+  it('moves a stop between days and recomputes times for both days', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Trip',
+        days: [
+          {
+            id: 'day-1',
+            startTime: '09:00',
+            stops: [
+              { id: 's1', name: 'Stop 1', durationMin: 60 },
+              { id: 's2', name: 'Stop 2 (To Move)', durationMin: 90 },
+            ],
+          },
+          {
+            id: 'day-2',
+            startTime: '10:00',
+            stops: [
+              { id: 's3', name: 'Stop 3', durationMin: 60 },
+            ],
+          },
+        ],
+      },
+    };
+
+    const state = plannerReducer(initialState, {
+      type: 'MOVE_STOP_TO_DAY',
+      payload: { fromDayId: 'day-1', toDayId: 'day-2', stopId: 's2' },
+    });
+
+    const day1 = state.itinerary.days[0];
+    const day2 = state.itinerary.days[1];
+
+    // Day 1 has only s1 left
+    expect(day1.stops).toHaveLength(1);
+    expect(day1.stops[0].id).toBe('s1');
+    expect(day1.totalDurationMin).toBe(60);
+
+    // Day 2 has s3 and s2
+    expect(day2.stops).toHaveLength(2);
+    expect(day2.stops[0].id).toBe('s3');
+    expect(day2.stops[0].startTime).toBe('10:00');
+    expect(day2.stops[1].id).toBe('s2');
+    expect(day2.stops[1].startTime).toBe('11:00'); // 10:00 + 60m of s3
+    expect(day2.totalDurationMin).toBe(150); // 60 + 90
+  });
 });

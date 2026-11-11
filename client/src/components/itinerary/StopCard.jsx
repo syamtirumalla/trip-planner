@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MoveToDaySelect } from './MoveToDaySelect.jsx';
 
 const TYPE_CONFIG = {
   food: { color: '#ea580c', bg: '#fff7ed', border: '#fdba74', icon: '🍽️' },
@@ -8,7 +9,14 @@ const TYPE_CONFIG = {
   rest: { color: '#7c3aed', bg: '#faf5ff', border: '#d8b4fe', icon: '☕' },
 };
 
-export function StopCard({ stop, onRemove }) {
+export function StopCard({
+  stop,
+  currentDayId,
+  allDays = [],
+  onRemove,
+  onMoveToDay,
+  dragHandleProps,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const typeStyle = TYPE_CONFIG[stop.type] || TYPE_CONFIG.sight;
 
@@ -24,116 +32,148 @@ export function StopCard({ stop, onRemove }) {
         transition: 'border-color var(--transition), box-shadow var(--transition)',
       }}
     >
-      {/* Real button header with aria-expanded */}
-      <button
-        type="button"
-        aria-expanded={isExpanded}
-        onClick={() => setIsExpanded((prev) => !prev)}
+      <div
         style={{
-          width: '100%',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          background: 'none',
-          border: 'none',
-          color: 'inherit',
-          cursor: 'pointer',
-          textAlign: 'left',
-          gap: '12px',
+          padding: '8px 12px',
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-          {/* Start Time Pill */}
-          <span
+        {/* Dedicated Drag Handle Button (Keyboard & Touch Accessible) */}
+        {dragHandleProps && (
+          <button
+            type="button"
+            aria-label={`Drag to reorder ${stop.name}`}
+            title="Drag to reorder"
+            {...dragHandleProps}
             style={{
-              fontSize: '12px',
-              fontWeight: '700',
-              fontVariantNumeric: 'tabular-nums',
-              color: 'var(--primary)',
-              background: 'var(--primary-light)',
-              padding: '3px 8px',
-              borderRadius: 'var(--radius-sm)',
-              whiteSpace: 'nowrap',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'grab',
+              padding: '6px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '15px',
+              lineHeight: 1,
+              touchAction: 'none',
+              userSelect: 'none',
             }}
           >
-            {stop.startTime || '09:00'}
-          </span>
+            ⋮⋮
+          </button>
+        )}
 
-          {/* Name & Type Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
-              {stop.name}
+        {/* Real button header with aria-expanded */}
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          onClick={() => setIsExpanded((prev) => !prev)}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            color: 'inherit',
+            cursor: 'pointer',
+            textAlign: 'left',
+            padding: '4px 0',
+            gap: '12px',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
+            {/* Start Time Pill */}
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: '700',
+                fontVariantNumeric: 'tabular-nums',
+                color: 'var(--primary)',
+                background: 'var(--primary-light)',
+                padding: '3px 8px',
+                borderRadius: 'var(--radius-sm)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {stop.startTime || '09:00'}
+            </span>
+
+            {/* Name & Type Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                {stop.name}
+              </span>
+
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.4px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: typeStyle.bg,
+                  color: typeStyle.color,
+                  border: `1px solid ${typeStyle.border}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>{typeStyle.icon}</span>
+                {stop.type}
+              </span>
+            </div>
+          </div>
+
+          {/* Right side: Duration & Expand Chevron */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {stop.durationMin}m
             </span>
 
             <span
               style={{
                 fontSize: '11px',
-                fontWeight: '600',
-                textTransform: 'uppercase',
-                letterSpacing: '0.4px',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                backgroundColor: typeStyle.bg,
-                color: typeStyle.color,
-                border: `1px solid ${typeStyle.border}`,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
+                color: 'var(--text-muted)',
+                display: 'inline-block',
+                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform var(--transition)',
               }}
             >
-              <span>{typeStyle.icon}</span>
-              {stop.type}
+              ▼
             </span>
           </div>
-        </div>
+        </button>
 
-        {/* Right side: Duration, Remove Action, Expand Chevron */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            {stop.durationMin}m
-          </span>
-
-          {/* Remove Button */}
-          <button
-            type="button"
-            aria-label={`Remove ${stop.name}`}
-            title="Remove stop"
-            onClick={(e) => {
-              e.stopPropagation(); // Do not toggle expand on remove
-              onRemove(stop.id);
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '4px 6px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '14px',
-              lineHeight: 1,
-              transition: 'color var(--transition)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-          >
-            ✕
-          </button>
-
-          {/* Expand indicator chevron */}
-          <span
-            style={{
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              display: 'inline-block',
-              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform var(--transition)',
-            }}
-          >
-            ▼
-          </span>
-        </div>
-      </button>
+        {/* Remove Button (outside the toggle button to avoid nested triggers) */}
+        <button
+          type="button"
+          aria-label={`Remove ${stop.name}`}
+          title="Remove stop"
+          onClick={() => onRemove(stop.id)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            padding: '6px 8px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '14px',
+            lineHeight: 1,
+            transition: 'color var(--transition)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+          ✕
+        </button>
+      </div>
 
       {/* Expanded Details Section */}
       {isExpanded && (
@@ -165,6 +205,16 @@ export function StopCard({ stop, onRemove }) {
               </div>
             )}
           </div>
+
+          {/* Accessible "Move to day" select */}
+          {allDays.length > 1 && onMoveToDay && (
+            <MoveToDaySelect
+              currentDayId={currentDayId}
+              stopId={stop.id}
+              days={allDays}
+              onMoveToDay={onMoveToDay}
+            />
+          )}
         </div>
       )}
     </article>

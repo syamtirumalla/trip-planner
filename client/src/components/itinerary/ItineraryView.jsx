@@ -2,16 +2,20 @@ import React from 'react';
 import { DaySection } from './DaySection.jsx';
 import { EmptyState } from '../EmptyState.jsx';
 
-export function ItineraryView({ itinerary, onRemoveStop, onReset }) {
+export function ItineraryView({
+  itinerary,
+  onRemoveStop,
+  onReorderStops,
+  onMoveToDay,
+  onReset,
+}) {
   if (!itinerary) return null;
 
-  // Calculate total stops across all days
   const totalStops = itinerary.days.reduce(
     (acc, day) => acc + (day.stops ? day.stops.length : 0),
     0
   );
 
-  // If user removed every stop across all days, render all-stops-removed empty state
   if (totalStops === 0) {
     return <EmptyState type="no-stops" onReset={onReset} />;
   }
@@ -83,7 +87,10 @@ export function ItineraryView({ itinerary, onRemoveStop, onReset }) {
           <DaySection
             key={day.id}
             day={day}
+            allDays={itinerary.days}
             onRemoveStop={onRemoveStop}
+            onReorderStops={onReorderStops}
+            onMoveToDay={onMoveToDay}
           />
         ))}
       </div>

@@ -21,6 +21,8 @@ export default function App() {
     removeStop,
     undoRemoval,
     dismissToast,
+    reorderStops,
+    moveStopToDay,
     reset,
   } = useTripPlanner();
 
@@ -75,6 +77,8 @@ export default function App() {
           <ItineraryView
             itinerary={state.itinerary}
             onRemoveStop={removeStop}
+            onReorderStops={reorderStops}
+            onMoveToDay={moveStopToDay}
             onReset={reset}
           />
         )}

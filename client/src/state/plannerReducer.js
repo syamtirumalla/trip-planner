@@ -11,6 +11,16 @@ export const initialPlannerState = {
 };
 
 /**
+ * Pure array move helper.
+ */
+function arrayMove(array, from, to) {
+  const next = [...array];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+/**
  * Pure state machine reducer for the trip planner.
  * Enforces strict requestId matching to discard stale network responses.
  *
@@ -36,7 +46,6 @@ export function plannerReducer(state = initialPlannerState, action) {
         return state;
       }
 
-      // Recompute derived start times for all days upon loading
       const rawItinerary = action.payload.itinerary;
       const itineraryWithDerivedTimes = rawItinerary
         ? {
@@ -114,7 +123,6 @@ export function plannerReducer(state = initialPlannerState, action) {
         if (day.id !== dayId) return day;
 
         const newStops = [...day.stops];
-        // Insert back at original index (or end if out of bounds)
         const targetIndex =
           typeof index === 'number' && index >= 0 && index <= newStops.length
             ? index
@@ -125,6 +133,75 @@ export function plannerReducer(state = initialPlannerState, action) {
           ...day,
           stops: newStops,
         });
+      });
+
+      return {
+        ...state,
+        itinerary: {
+          ...state.itinerary,
+          days: updatedDays,
+        },
+      };
+    }
+
+    case PLANNER_ACTIONS.REORDER_STOPS: {
+      if (!state.itinerary) return state;
+
+      const { dayId, activeStopId, overStopId } = action.payload;
+      if (activeStopId === overStopId) return state;
+
+      const updatedDays = state.itinerary.days.map((day) => {
+        if (day.id !== dayId) return day;
+
+        const oldIndex = day.stops.findIndex((s) => s.id === activeStopId);
+        const newIndex = day.stops.findIndex((s) => s.id === overStopId);
+
+        if (oldIndex === -1 || newIndex === -1) return day;
+
+        const reorderedStops = arrayMove(day.stops, oldIndex, newIndex);
+        return recomputeTimes({
+          ...day,
+          stops: reorderedStops,
+        });
+      });
+
+      return {
+        ...state,
+        itinerary: {
+          ...state.itinerary,
+          days: updatedDays,
+        },
+      };
+    }
+
+    case PLANNER_ACTIONS.MOVE_STOP_TO_DAY: {
+      if (!state.itinerary) return state;
+
+      const { fromDayId, toDayId, stopId } = action.payload;
+      if (fromDayId === toDayId) return state;
+
+      const fromDay = state.itinerary.days.find((d) => d.id === fromDayId);
+      const toDay = state.itinerary.days.find((d) => d.id === toDayId);
+
+      if (!fromDay || !toDay) return state;
+
+      const stopToMove = fromDay.stops.find((s) => s.id === stopId);
+      if (!stopToMove) return state;
+
+      const updatedDays = state.itinerary.days.map((day) => {
+        if (day.id === fromDayId) {
+          return recomputeTimes({
+            ...day,
+            stops: day.stops.filter((s) => s.id !== stopId),
+          });
+        }
+        if (day.id === toDayId) {
+          return recomputeTimes({
+            ...day,
+            stops: [...day.stops, stopToMove],
+          });
+        }
+        return day;
       });
 
       return {
