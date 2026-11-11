@@ -252,10 +252,13 @@ I used AI heavily on this project and tried to stay in control of it.
 
 ## Time spent
 
+About **5 hours** in total, over three sessions. This is wall-clock time while I was actively working (planning, reading the agent's output, testing, debugging), estimated from git commit timestamps and excluding breaks. The AI agent's own active working time was about 1h 40m of this.
+
 | Session | Work | Hours |
 | :--- | :--- | :--- |
-| 1 | _fill in_ | _fill in_ |
-| 2 | _fill in_ | _fill in_ |
-| 3 | _fill in_ | _fill in_ |
-| 4 | _fill in_ | _fill in_ |
-| **Total** | | _fill in_ |
+| 1 (Nov 10, evening) | Planning and scoping, project setup and environment problems (wrong working folder, dependency audit, API keys), phases 1 and 2 (scaffold, schema, validation, salvage, repair retry) | ~1h 45m |
+| 2 (Nov 11, morning) | Gemini timeouts and model debugging, adding Groq as a second provider, phases 3 to 7 (state machine, itinerary UI, drag and drop, mobile polish, save/restore, dark mode, refinement), and fixing the removal and truncation bugs | ~2h 10m |
+| 3 (Nov 11, afternoon) | README, clean-clone test, screenshots, demo recording, final checks | ~1h 15m |
+| **Total** | | **~5h 10m** |
+
+I stayed under the 8-hour budget, so I stopped at the "what I'd do next" list below instead of adding more features.
