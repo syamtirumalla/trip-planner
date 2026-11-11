@@ -422,4 +422,94 @@ describe('plannerReducer (Pure State Machine & Stale Response Protection)', () =
     expect(day2AfterUndo.stops[1].startTime).toBe('10:30');
     expect(day2AfterUndo.totalDurationMin).toBe(75);
   });
+
+  describe('Refinement State Transitions & Stale Guarding', () => {
+    const baseItinerary = {
+      title: 'Rome Trip',
+      days: [
+        {
+          id: 'day-1',
+          startTime: '09:00',
+          stops: [{ id: 's1', name: 'Colosseum', durationMin: 60, startTime: '09:00' }],
+        },
+      ],
+    };
+
+    it('sets isRefining to true and tracks instruction on START_REFINE', () => {
+      const state = plannerReducer(
+        { ...initialPlannerState, status: 'success', itinerary: baseItinerary, activeRequestId: 1 },
+        { type: 'START_REFINE', payload: { requestId: 2, instruction: 'make day 1 lighter' } }
+      );
+
+      expect(state.isRefining).toBe(true);
+      expect(state.activeRequestId).toBe(2);
+      expect(state.lastRefinementInstruction).toBe('make day 1 lighter');
+      expect(state.refineError).toBeNull();
+    });
+
+    it('stores previousItinerary for undo and applies refined itinerary on RECEIVE_REFINE_SUCCESS', () => {
+      const refiningState = {
+        ...initialPlannerState,
+        status: 'success',
+        itinerary: baseItinerary,
+        activeRequestId: 2,
+        isRefining: true,
+        lastRefinementInstruction: 'make day 1 lighter',
+      };
+
+      const refinedItinerary = {
+        title: 'Rome Trip (Light)',
+        days: [
+          {
+            id: 'day-1',
+            startTime: '10:00',
+            stops: [{ id: 's1', name: 'Colosseum', durationMin: 45 }],
+          },
+        ],
+      };
+
+      const nextState = plannerReducer(refiningState, {
+        type: 'RECEIVE_REFINE_SUCCESS',
+        payload: { requestId: 2, itinerary: refinedItinerary, warnings: [] },
+      });
+
+      expect(nextState.isRefining).toBe(false);
+      expect(nextState.previousItinerary).toEqual(baseItinerary);
+      expect(nextState.itinerary.title).toBe('Rome Trip (Light)');
+      expect(nextState.itinerary.days[0].stops[0].startTime).toBe('10:00');
+    });
+
+    it('CRITICAL: ignores stale refinement response when requestId does not match', () => {
+      const state = {
+        ...initialPlannerState,
+        status: 'success',
+        itinerary: baseItinerary,
+        activeRequestId: 5,
+        isRefining: true,
+      };
+
+      const staleResponse = plannerReducer(state, {
+        type: 'RECEIVE_REFINE_SUCCESS',
+        payload: { requestId: 4, itinerary: { title: 'Old Refined' } },
+      });
+
+      expect(staleResponse.itinerary).toEqual(baseItinerary);
+      expect(staleResponse.previousItinerary).toBeNull();
+    });
+
+    it('restores previousItinerary on UNDO_REFINEMENT', () => {
+      const refinedState = {
+        ...initialPlannerState,
+        status: 'success',
+        itinerary: { title: 'Refined Trip' },
+        previousItinerary: baseItinerary,
+        lastRefinementInstruction: 'make day 1 lighter',
+      };
+
+      const stateAfterUndo = plannerReducer(refinedState, { type: 'UNDO_REFINEMENT' });
+      expect(stateAfterUndo.itinerary).toEqual(baseItinerary);
+      expect(stateAfterUndo.previousItinerary).toBeNull();
+      expect(stateAfterUndo.lastRefinementInstruction).toBe('');
+    });
+  });
 });

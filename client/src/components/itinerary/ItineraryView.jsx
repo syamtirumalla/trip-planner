@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DaySection } from './DaySection.jsx';
 import { DayTabs } from './DayTabs.jsx';
+import { RefineForm } from './RefineForm.jsx';
 import { EmptyState } from '../EmptyState.jsx';
 
 export function ItineraryView({
@@ -10,6 +11,13 @@ export function ItineraryView({
   onMoveToDay,
   onClearSavedTrip,
   onReset,
+  onRefine,
+  isRefining,
+  refineError,
+  onDismissRefineError,
+  hasPreviousItinerary,
+  onUndoRefine,
+  lastRefinementInstruction,
 }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
@@ -212,6 +220,19 @@ export function ItineraryView({
             />
           ))}
         </div>
+      )}
+
+      {/* Refinement conversational loop input */}
+      {onRefine && (
+        <RefineForm
+          onRefine={onRefine}
+          isRefining={isRefining}
+          refineError={refineError}
+          onDismissError={onDismissRefineError}
+          hasPreviousItinerary={hasPreviousItinerary}
+          onUndoRefine={onUndoRefine}
+          lastInstruction={lastRefinementInstruction}
+        />
       )}
     </div>
   );

@@ -11,6 +11,11 @@ export const PLANNER_ACTIONS = {
   MOVE_STOP_TO_DAY: 'MOVE_STOP_TO_DAY',
   UPDATE_ITINERARY: 'UPDATE_ITINERARY',
   RESTORE_SAVED_TRIP: 'RESTORE_SAVED_TRIP',
+  START_REFINE: 'START_REFINE',
+  RECEIVE_REFINE_SUCCESS: 'RECEIVE_REFINE_SUCCESS',
+  RECEIVE_REFINE_ERROR: 'RECEIVE_REFINE_ERROR',
+  UNDO_REFINEMENT: 'UNDO_REFINEMENT',
+  DISMISS_REFINE_ERROR: 'DISMISS_REFINE_ERROR',
 };
 
 export function startRequest(requestId, prompt) {
@@ -94,4 +99,38 @@ export function restoreSavedTrip(itinerary, prompt = '') {
     payload: { itinerary, prompt },
   };
 }
+
+export function startRefine(requestId, instruction) {
+  return {
+    type: PLANNER_ACTIONS.START_REFINE,
+    payload: { requestId, instruction },
+  };
+}
+
+export function receiveRefineSuccess(requestId, itinerary, warnings = []) {
+  return {
+    type: PLANNER_ACTIONS.RECEIVE_REFINE_SUCCESS,
+    payload: { requestId, itinerary, warnings },
+  };
+}
+
+export function receiveRefineError(requestId, error) {
+  return {
+    type: PLANNER_ACTIONS.RECEIVE_REFINE_ERROR,
+    payload: { requestId, error },
+  };
+}
+
+export function undoRefinement() {
+  return {
+    type: PLANNER_ACTIONS.UNDO_REFINEMENT,
+  };
+}
+
+export function dismissRefineError() {
+  return {
+    type: PLANNER_ACTIONS.DISMISS_REFINE_ERROR,
+  };
+}
+
 

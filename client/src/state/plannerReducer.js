@@ -6,6 +6,10 @@ export const initialPlannerState = {
   activeRequestId: 0,
   prompt: '',
   itinerary: null,
+  previousItinerary: null, // For Undo refinement
+  lastRefinementInstruction: '',
+  isRefining: false,
+  refineError: null,
   warnings: [],
   error: null, // { code: string, message: string }
 };
@@ -236,6 +240,68 @@ export function plannerReducer(state = initialPlannerState, action) {
         prompt: action.payload.prompt || '',
         warnings: [],
         error: null,
+      };
+    }
+
+    case PLANNER_ACTIONS.START_REFINE: {
+      return {
+        ...state,
+        isRefining: true,
+        refineError: null,
+        activeRequestId: action.payload.requestId,
+        lastRefinementInstruction: action.payload.instruction,
+      };
+    }
+
+    case PLANNER_ACTIONS.RECEIVE_REFINE_SUCCESS: {
+      if (action.payload.requestId !== state.activeRequestId) {
+        return state;
+      }
+
+      const rawItinerary = action.payload.itinerary;
+      const itineraryWithDerivedTimes = rawItinerary
+        ? {
+            ...rawItinerary,
+            days: (rawItinerary.days || []).map((day) => recomputeTimes(day)),
+          }
+        : null;
+
+      return {
+        ...state,
+        isRefining: false,
+        refineError: null,
+        previousItinerary: state.itinerary,
+        itinerary: itineraryWithDerivedTimes,
+        warnings: action.payload.warnings || [],
+      };
+    }
+
+    case PLANNER_ACTIONS.RECEIVE_REFINE_ERROR: {
+      if (action.payload.requestId !== state.activeRequestId) {
+        return state;
+      }
+      return {
+        ...state,
+        isRefining: false,
+        refineError: action.payload.error,
+      };
+    }
+
+    case PLANNER_ACTIONS.UNDO_REFINEMENT: {
+      if (!state.previousItinerary) return state;
+      return {
+        ...state,
+        itinerary: state.previousItinerary,
+        previousItinerary: null,
+        lastRefinementInstruction: '',
+        refineError: null,
+      };
+    }
+
+    case PLANNER_ACTIONS.DISMISS_REFINE_ERROR: {
+      return {
+        ...state,
+        refineError: null,
       };
     }
 

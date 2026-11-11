@@ -12,10 +12,16 @@ import {
   moveStopToDay as moveStopToDayAction,
   updateItinerary as updateItineraryAction,
   restoreSavedTrip,
+  startRefine,
+  receiveRefineSuccess,
+  receiveRefineError,
+  undoRefinement,
+  dismissRefineError as dismissRefineErrorAction,
   resetPlanner,
 } from '../state/plannerActions.js';
 import { PlanResponseSchema } from '../../../shared/schema.js';
 import { generateId } from '../utils/id.js';
+import { reconcileItinerary } from '../utils/reconcile.js';
 import {
   saveItinerary,
   loadSavedItinerary,
@@ -249,6 +255,111 @@ export function useTripPlanner() {
   }, []);
 
   /**
+   * Dispatches refinement request to /api/refine with current itinerary and instruction.
+   * Uses AbortController and stale response guarding, validates response, and reconciles IDs.
+   */
+  const refineTrip = useCallback(
+    async (instructionText, simulateHeader = null) => {
+      if (!instructionText || !instructionText.trim() || !state.itinerary) return;
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      requestIdRef.current += 1;
+      const currentRequestId = requestIdRef.current;
+
+      dispatch(startRefine(currentRequestId, instructionText.trim()));
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+
+        if (!import.meta.env.PROD && simulateHeader) {
+          headers['x-simulate'] = simulateHeader;
+        }
+
+        const res = await fetch('/api/refine', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            itinerary: state.itinerary,
+            instruction: instructionText.trim(),
+          }),
+          signal: controller.signal,
+        });
+
+        const json = await res.json().catch(() => ({}));
+
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
+
+        if (!res.ok) {
+          dispatch(
+            receiveRefineError(currentRequestId, {
+              code: json.error?.code || 'UPSTREAM',
+              message: json.error?.message || 'Server error occurred while refining trip.',
+            })
+          );
+          return;
+        }
+
+        const clientValidation = PlanResponseSchema.safeParse(json);
+        if (!clientValidation.success) {
+          console.error('[Client Refine Validation Failed]:', clientValidation.error);
+          dispatch(
+            receiveRefineError(currentRequestId, {
+              code: 'WRONG_SHAPE',
+              message: 'Refined itinerary returned invalid format.',
+            })
+          );
+          return;
+        }
+
+        const { itinerary: rawRefined, warnings } = clientValidation.data;
+
+        // Preserve client-side IDs for unchanged stops and days
+        const reconciledItinerary = reconcileItinerary(rawRefined, state.itinerary);
+
+        dispatch(receiveRefineSuccess(currentRequestId, reconciledItinerary, warnings));
+      } catch (err) {
+        if (err.name === 'AbortError' || controller.signal.aborted) {
+          return;
+        }
+
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
+
+        dispatch(
+          receiveRefineError(currentRequestId, {
+            code: 'UPSTREAM',
+            message: err.message || 'Unable to connect to the refinement server.',
+          })
+        );
+      }
+    },
+    [state.itinerary]
+  );
+
+  /**
+   * Undoes the last refinement and restores the previous itinerary.
+   */
+  const undoRefine = useCallback(() => {
+    dispatch(undoRefinement());
+  }, []);
+
+  /**
+   * Dismisses an active refinement error alert.
+   */
+  const dismissRefineError = useCallback(() => {
+    dispatch(dismissRefineErrorAction());
+  }, []);
+
+  /**
    * Clears saved trip from localStorage and resets planner.
    */
   const clearSavedTrip = useCallback(() => {
@@ -279,6 +390,9 @@ export function useTripPlanner() {
     reorderStops,
     moveStopToDay,
     updateItinerary,
+    refineTrip,
+    undoRefine,
+    dismissRefineError,
     clearSavedTrip,
     reset,
   };

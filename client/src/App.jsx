@@ -27,6 +27,9 @@ export default function App() {
     reorderStops,
     moveStopToDay,
     clearSavedTrip,
+    refineTrip,
+    undoRefine,
+    dismissRefineError,
     reset,
   } = useTripPlanner();
 
@@ -131,6 +134,13 @@ export default function App() {
             onMoveToDay={moveStopToDay}
             onClearSavedTrip={clearSavedTrip}
             onReset={reset}
+            onRefine={refineTrip}
+            isRefining={state.isRefining}
+            refineError={state.refineError}
+            onDismissRefineError={dismissRefineError}
+            hasPreviousItinerary={Boolean(state.previousItinerary)}
+            onUndoRefine={undoRefine}
+            lastRefinementInstruction={state.lastRefinementInstruction}
           />
         )}
 
