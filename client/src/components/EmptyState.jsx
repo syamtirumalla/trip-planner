@@ -4,6 +4,8 @@ export function EmptyState({ type = 'initial', onReset }) {
   if (type === 'no-stops') {
     return (
       <div
+        role="status"
+        aria-live="polite"
         style={{
           textAlign: 'center',
           padding: '40px 20px',
@@ -13,10 +15,10 @@ export function EmptyState({ type = 'initial', onReset }) {
           color: 'var(--text-secondary)',
         }}
       >
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>
           All stops have been removed
         </h3>
-        <p style={{ fontSize: '13px', marginBottom: '16px' }}>
+        <p style={{ fontSize: '13px', marginBottom: '16px', color: 'var(--text-secondary)' }}>
           You removed every stop from this trip. You can plan another trip above or restore an itinerary.
         </p>
         {onReset && (
@@ -24,13 +26,19 @@ export function EmptyState({ type = 'initial', onReset }) {
             type="button"
             onClick={onReset}
             style={{
-              padding: '8px 16px',
+              minHeight: '44px',
+              padding: '10px 18px',
               background: 'var(--primary)',
-              color: '#fff',
+              color: '#ffffff',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               fontSize: '13px',
+              fontWeight: '600',
               cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'manipulation',
             }}
           >
             Start New Plan

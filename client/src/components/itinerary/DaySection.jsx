@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -23,19 +23,32 @@ export function DaySection({
   onReorderStops,
   onMoveToDay,
 }) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   const stopCount = day.stops ? day.stops.length : 0;
   const totalDuration = formatDuration(day.totalDurationMin || 0);
 
   // Configure pointer, touch, and keyboard sensors
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      distance: 6, // Prevents accidental drag when clicking
+      distance: 6, // Prevents accidental drag when clicking/tapping
     },
   });
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 200,
+      delay: 200, // 200ms touch press before drag starts
       tolerance: 5,
     },
   });
@@ -67,18 +80,18 @@ export function DaySection({
       {/* Day Section Header */}
       <div
         style={{
-          padding: '16px 20px',
+          padding: isMobile ? '12px 14px' : '16px 20px',
           background: 'var(--bg-secondary)',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '10px',
         }}
       >
         <div>
-          <h2 style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+          <h2 style={{ fontSize: isMobile ? '16px' : '17px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
             {day.label}
           </h2>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -87,11 +100,11 @@ export function DaySection({
         </div>
 
         {/* Per-day summary stats */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span
             style={{
               fontSize: '12px',
-              padding: '4px 10px',
+              padding: '3px 8px',
               borderRadius: '12px',
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-color)',
@@ -105,7 +118,7 @@ export function DaySection({
           <span
             style={{
               fontSize: '12px',
-              padding: '4px 10px',
+              padding: '3px 8px',
               borderRadius: '12px',
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-color)',
@@ -119,7 +132,7 @@ export function DaySection({
       </div>
 
       {/* Stop Cards List with dnd-kit Sortable Context */}
-      <div style={{ padding: '16px' }}>
+      <div style={{ padding: isMobile ? '12px' : '16px' }}>
         {stopCount === 0 ? (
           <div
             style={{
@@ -140,7 +153,7 @@ export function DaySection({
             onDragEnd={handleDragEnd}
             accessibility={{
               screenReaderInstructions: {
-                draggable: 'To pick up a draggable item, press space or enter. While dragging, use arrow keys to move. Press space or enter again to drop, or escape to cancel.',
+                draggable: 'To pick up a draggable item, press space or enter on the drag handle. While dragging, use arrow keys to move. Press space or enter again to drop, or escape to cancel.',
               },
             }}
           >

@@ -1,7 +1,8 @@
 import React from 'react';
 
 /**
- * Accessible select dropdown allowing keyboard and screen-reader users to move a stop across days.
+ * Accessible select dropdown allowing keyboard, screen-reader, and touch users to move a stop across days.
+ * Ensures minimum 44px touch target on mobile.
  */
 export function MoveToDaySelect({ currentDayId, stopId, days = [], onMoveToDay }) {
   const otherDays = days.filter((d) => d.id !== currentDayId);
@@ -13,8 +14,9 @@ export function MoveToDaySelect({ currentDayId, stopId, days = [], onMoveToDay }
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        fontSize: '12px',
+        flexWrap: 'wrap',
+        gap: '8px',
+        fontSize: '13px',
         marginTop: '12px',
         paddingTop: '10px',
         borderTop: '1px dashed var(--border-color)',
@@ -37,13 +39,15 @@ export function MoveToDaySelect({ currentDayId, stopId, days = [], onMoveToDay }
           }
         }}
         style={{
-          padding: '3px 8px',
-          fontSize: '12px',
+          minHeight: '44px',
+          padding: '6px 12px',
+          fontSize: '14px',
           borderRadius: 'var(--radius-sm)',
           border: '1px solid var(--border-color)',
           background: 'var(--bg-primary)',
           color: 'var(--text-primary)',
           cursor: 'pointer',
+          maxWidth: '100%',
         }}
       >
         <option value="" disabled>
@@ -58,4 +62,3 @@ export function MoveToDaySelect({ currentDayId, stopId, days = [], onMoveToDay }
     </div>
   );
 }
-

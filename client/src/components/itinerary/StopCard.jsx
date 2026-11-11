@@ -52,14 +52,17 @@ export function StopCard({
               border: 'none',
               color: 'var(--text-muted)',
               cursor: 'grab',
-              padding: '6px 4px',
+              padding: '4px',
+              minWidth: '44px',
+              minHeight: '44px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '15px',
+              fontSize: '16px',
               lineHeight: 1,
               touchAction: 'none',
               userSelect: 'none',
+              borderRadius: 'var(--radius-sm)',
             }}
           >
             ⋮⋮
@@ -82,7 +85,8 @@ export function StopCard({
             cursor: 'pointer',
             textAlign: 'left',
             padding: '4px 0',
-            gap: '12px',
+            minHeight: '44px',
+            gap: '8px',
             minWidth: 0,
           }}
         >
@@ -170,9 +174,14 @@ export function StopCard({
             border: 'none',
             color: 'var(--text-muted)',
             cursor: 'pointer',
-            padding: '6px 8px',
+            padding: '4px',
+            minWidth: '44px',
+            minHeight: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             borderRadius: 'var(--radius-sm)',
-            fontSize: '14px',
+            fontSize: '16px',
             lineHeight: 1,
             transition: 'color var(--transition)',
           }}

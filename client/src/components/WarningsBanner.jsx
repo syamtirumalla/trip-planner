@@ -6,12 +6,13 @@ export function WarningsBanner({ warnings, onDismiss }) {
   return (
     <div
       role="status"
+      aria-live="polite"
       style={{
         padding: '12px 16px',
         background: '#fffbeb',
         border: '1px solid #fef3c7',
         borderRadius: 'var(--radius-md)',
-        color: '#92400e',
+        color: '#78350f',
         marginBottom: '20px',
         display: 'flex',
         alignItems: 'flex-start',
@@ -20,7 +21,7 @@ export function WarningsBanner({ warnings, onDismiss }) {
       }}
     >
       <div style={{ fontSize: '13px' }}>
-        <strong style={{ display: 'block', marginBottom: '4px' }}>
+        <strong style={{ display: 'block', marginBottom: '4px', color: '#92400e' }}>
           Itinerary Salvaged With Adjustments
         </strong>
         <ul style={{ paddingLeft: '18px', margin: 0 }}>
@@ -38,10 +39,16 @@ export function WarningsBanner({ warnings, onDismiss }) {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: '#92400e',
-          fontSize: '16px',
+          color: '#78350f',
+          fontSize: '18px',
           fontWeight: 'bold',
-          padding: '2px 6px',
+          padding: '4px',
+          minWidth: '44px',
+          minHeight: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          touchAction: 'manipulation',
         }}
       >
         &times;

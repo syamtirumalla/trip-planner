@@ -28,6 +28,8 @@ export function DevSimulator({ activeSimulation, onSelectSimulation }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
         fontSize: '12px',
         color: '#475569',
       }}
@@ -51,14 +53,17 @@ export function DevSimulator({ activeSimulation, onSelectSimulation }) {
       <select
         value={activeSimulation || ''}
         onChange={(e) => onSelectSimulation(e.target.value || null)}
+        aria-label="Select failure simulation"
         style={{
-          padding: '4px 8px',
+          padding: '6px 8px',
           fontSize: '12px',
+          minHeight: '44px',
           borderRadius: 'var(--radius-sm)',
           border: '1px solid #cbd5e1',
           background: '#ffffff',
           color: '#1e293b',
           cursor: 'pointer',
+          maxWidth: '100%',
         }}
       >
         {SIMULATION_OPTIONS.map((opt) => (

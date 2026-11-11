@@ -19,6 +19,7 @@ export function ErrorAlert({ error, onRetry }) {
   return (
     <div
       role="alert"
+      aria-live="assertive"
       style={{
         padding: '16px 20px',
         background: '#fef2f2',
@@ -28,20 +29,20 @@ export function ErrorAlert({ error, onRetry }) {
         marginBottom: '24px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
+        gap: '12px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <strong style={{ fontSize: '15px' }}>
           {code === 'TIMEOUT' ? 'Request Timed Out' : 'Failed to Generate Itinerary'}
         </strong>
         <span
           style={{
             fontSize: '11px',
-            padding: '2px 6px',
+            padding: '2px 8px',
             background: '#fee2e2',
             borderRadius: '4px',
-            fontWeight: '600',
+            fontWeight: '700',
             letterSpacing: '0.5px',
           }}
         >
@@ -49,24 +50,29 @@ export function ErrorAlert({ error, onRetry }) {
         </span>
       </div>
 
-      <p style={{ fontSize: '13px', margin: 0, color: '#7f1d1d' }}>
+      <p style={{ fontSize: '13px', margin: 0, color: '#7f1d1d', lineHeight: 1.5 }}>
         {description}
       </p>
 
       {onRetry && (
-        <div>
+        <div style={{ marginTop: '4px' }}>
           <button
             type="button"
             onClick={onRetry}
             style={{
-              padding: '6px 14px',
+              minHeight: '44px',
+              padding: '8px 16px',
               backgroundColor: '#dc2626',
               color: '#ffffff',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               fontSize: '13px',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'manipulation',
             }}
           >
             Retry Request

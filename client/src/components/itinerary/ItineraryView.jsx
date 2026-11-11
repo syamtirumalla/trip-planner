@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DaySection } from './DaySection.jsx';
+import { DayTabs } from './DayTabs.jsx';
 import { EmptyState } from '../EmptyState.jsx';
 
 export function ItineraryView({
@@ -9,6 +10,33 @@ export function ItineraryView({
   onMoveToDay,
   onReset,
 }) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  const [activeDayId, setActiveDayId] = useState(
+    itinerary?.days?.[0]?.id || null
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  // Sync activeDayId if itinerary days update
+  useEffect(() => {
+    if (itinerary?.days && itinerary.days.length > 0) {
+      const exists = itinerary.days.some((d) => d.id === activeDayId);
+      if (!exists) {
+        setActiveDayId(itinerary.days[0].id);
+      }
+    }
+  }, [itinerary?.days, activeDayId]);
+
   if (!itinerary) return null;
 
   const totalStops = itinerary.days.reduce(
@@ -20,13 +48,16 @@ export function ItineraryView({
     return <EmptyState type="no-stops" onReset={onReset} />;
   }
 
+  const activeDay =
+    itinerary.days.find((d) => d.id === activeDayId) || itinerary.days[0];
+
   return (
     <div style={{ marginBottom: '32px' }}>
       {/* Itinerary Header */}
       <div
         style={{
           background: 'var(--bg-card)',
-          padding: '24px',
+          padding: isMobile ? '16px' : '24px',
           borderRadius: 'var(--radius-md)',
           border: '1px solid var(--border-color)',
           boxShadow: 'var(--shadow-sm)',
@@ -43,8 +74,16 @@ export function ItineraryView({
             marginBottom: '10px',
           }}
         >
-          <div style={{ flex: 1, minWidth: '240px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>
+          <div style={{ flex: 1, minWidth: '220px' }}>
+            <h1
+              style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '800',
+                color: 'var(--text-primary)',
+                marginBottom: '6px',
+                letterSpacing: '-0.3px',
+              }}
+            >
               {itinerary.title}
             </h1>
             {itinerary.summary && (
@@ -58,9 +97,9 @@ export function ItineraryView({
           <span
             style={{
               fontSize: '11px',
-              color: '#64748b',
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              color: 'var(--text-secondary)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
               padding: '4px 10px',
               borderRadius: '12px',
               display: 'inline-flex',
@@ -75,25 +114,61 @@ export function ItineraryView({
         </div>
 
         {/* Global Trip Meta: total days and total stops */}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            marginTop: '12px',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            flexWrap: 'wrap',
+          }}
+        >
           <span>📅 {itinerary.days.length} {itinerary.days.length === 1 ? 'day' : 'days'}</span>
           <span>📍 {totalStops} total stops</span>
         </div>
       </div>
 
-      {/* Days Stack */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {itinerary.days.map((day) => (
-          <DaySection
-            key={day.id}
-            day={day}
-            allDays={itinerary.days}
-            onRemoveStop={onRemoveStop}
-            onReorderStops={onReorderStops}
-            onMoveToDay={onMoveToDay}
+      {/* Content Rendering: Mobile Tabs (<768px) vs Desktop Stack (>=768px) */}
+      {isMobile ? (
+        <div>
+          <DayTabs
+            days={itinerary.days}
+            activeDayId={activeDay?.id}
+            onSelectDay={setActiveDayId}
           />
-        ))}
-      </div>
+          {activeDay && (
+            <div
+              role="tabpanel"
+              id={`tabpanel-${activeDay.id}`}
+              aria-labelledby={`tab-${activeDay.id}`}
+              tabIndex={0}
+              style={{ outline: 'none' }}
+            >
+              <DaySection
+                day={activeDay}
+                allDays={itinerary.days}
+                onRemoveStop={onRemoveStop}
+                onReorderStops={onReorderStops}
+                onMoveToDay={onMoveToDay}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {itinerary.days.map((day) => (
+            <DaySection
+              key={day.id}
+              day={day}
+              allDays={itinerary.days}
+              onRemoveStop={onRemoveStop}
+              onReorderStops={onReorderStops}
+              onMoveToDay={onMoveToDay}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

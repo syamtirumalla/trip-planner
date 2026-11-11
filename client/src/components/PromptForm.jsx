@@ -29,6 +29,8 @@ export function PromptForm({ onSubmit, onCancel, status }) {
         border: '1px solid var(--border-color)',
         boxShadow: 'var(--shadow-sm)',
         marginBottom: '24px',
+        scrollMarginTop: '16px',
+        scrollMarginBottom: '16px',
       }}
     >
       <label
@@ -44,19 +46,24 @@ export function PromptForm({ onSubmit, onCancel, status }) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_LIMITS.MAX_LENGTH))}
           onKeyDown={handleKeyDown}
+          onFocus={(e) => {
+            // Ensure on-screen mobile keyboard does not cover the form
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }}
           disabled={isLoading}
           rows={3}
           placeholder="e.g. 4 days in Kyoto in April, love food and temples, mid budget"
           style={{
             width: '100%',
             padding: '12px',
-            fontSize: '14px',
+            fontSize: '16px', // 16px prevents iOS Safari viewport auto-zoom
             borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--border-color)',
             background: 'var(--bg-primary)',
             color: 'var(--text-primary)',
             resize: 'vertical',
             outline: 'none',
+            minHeight: '88px',
           }}
         />
         <span
@@ -72,11 +79,13 @@ export function PromptForm({ onSubmit, onCancel, status }) {
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
         <button
           type="submit"
           disabled={isLoading || prompt.trim().length < PROMPT_LIMITS.MIN_LENGTH}
           style={{
+            minHeight: '44px',
+            minWidth: '44px',
             padding: '10px 20px',
             background: 'var(--primary)',
             color: '#ffffff',
@@ -87,6 +96,10 @@ export function PromptForm({ onSubmit, onCancel, status }) {
             cursor: isLoading ? 'not-allowed' : 'pointer',
             opacity: isLoading || prompt.trim().length < PROMPT_LIMITS.MIN_LENGTH ? 0.6 : 1,
             transition: 'opacity var(--transition)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            touchAction: 'manipulation',
           }}
         >
           {isLoading ? 'Planning Trip...' : 'Plan Trip'}
@@ -97,7 +110,9 @@ export function PromptForm({ onSubmit, onCancel, status }) {
             type="button"
             onClick={onCancel}
             style={{
-              padding: '10px 16px',
+              minHeight: '44px',
+              minWidth: '44px',
+              padding: '10px 18px',
               background: '#f1f5f9',
               color: '#334155',
               border: '1px solid #cbd5e1',
@@ -105,6 +120,10 @@ export function PromptForm({ onSubmit, onCancel, status }) {
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'manipulation',
             }}
           >
             Cancel

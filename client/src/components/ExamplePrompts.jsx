@@ -8,7 +8,7 @@ export const EXAMPLE_PROMPTS = [
 
 export function ExamplePrompts({ onSelectPrompt, disabled }) {
   return (
-    <div style={{ marginTop: '12px' }}>
+    <div style={{ marginTop: '16px' }}>
       <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
         Try an example:
       </p>
@@ -20,8 +20,9 @@ export function ExamplePrompts({ onSelectPrompt, disabled }) {
             disabled={disabled}
             onClick={() => onSelectPrompt(ex)}
             style={{
-              padding: '6px 12px',
-              fontSize: '12px',
+              minHeight: '44px',
+              padding: '8px 14px',
+              fontSize: '13px',
               background: 'var(--bg-primary)',
               color: 'var(--text-secondary)',
               border: '1px solid var(--border-color)',
@@ -29,6 +30,9 @@ export function ExamplePrompts({ onSelectPrompt, disabled }) {
               cursor: disabled ? 'not-allowed' : 'pointer',
               textAlign: 'left',
               transition: 'all var(--transition)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              touchAction: 'manipulation',
             }}
           >
             &ldquo;{ex}&rdquo;

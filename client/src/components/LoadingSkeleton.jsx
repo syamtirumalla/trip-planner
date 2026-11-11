@@ -5,6 +5,7 @@ export function LoadingSkeleton() {
     <div
       role="status"
       aria-live="polite"
+      aria-busy="true"
       style={{
         background: 'var(--bg-card)',
         padding: '24px',
@@ -14,7 +15,7 @@ export function LoadingSkeleton() {
         marginBottom: '24px',
       }}
     >
-      <span className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden' }}>
+      <span className="sr-only">
         Creating your tailored itinerary with AI, please wait...
       </span>
 

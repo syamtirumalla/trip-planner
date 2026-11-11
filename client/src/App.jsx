@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTripPlanner } from './hooks/useTripPlanner.js';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { PromptForm } from './components/PromptForm.jsx';
@@ -27,6 +27,18 @@ export default function App() {
   } = useTripPlanner();
 
   const [activeSimulation, setActiveSimulation] = useState(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   const handlePlanSubmit = (promptText) => {
     planTrip(promptText, activeSimulation);
@@ -34,11 +46,31 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div style={{ maxWidth: '840px', margin: '0 auto', padding: '32px 20px' }}>
+      <div
+        style={{
+          maxWidth: '840px',
+          margin: '0 auto',
+          padding: isMobile ? '20px 14px' : '32px 20px',
+          paddingBottom: isMobile
+            ? toasts.length > 0
+              ? 'calc(160px + env(safe-area-inset-bottom, 12px))'
+              : '48px'
+            : '64px',
+          minHeight: '100vh',
+        }}
+      >
         <header style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '28px' }}>✈️</span>
-            <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+            <span style={{ fontSize: isMobile ? '24px' : '28px' }} aria-hidden="true">
+              ✈️
+            </span>
+            <h1
+              style={{
+                fontSize: isMobile ? '22px' : '28px',
+                fontWeight: '800',
+                letterSpacing: '-0.5px',
+              }}
+            >
               AI Trip Planner
             </h1>
           </div>
@@ -85,7 +117,7 @@ export default function App() {
 
         {state.status === 'idle' && <EmptyState type="initial" />}
 
-        {/* Undo Toasts (6-second countdown) */}
+        {/* Undo Toasts (docked to bottom full-width on mobile, max 3 visible) */}
         <ToastContainer
           toasts={toasts}
           onUndo={undoRemoval}
