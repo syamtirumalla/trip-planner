@@ -58,3 +58,4 @@ export function MoveToDaySelect({ currentDayId, stopId, days = [], onMoveToDay }
     </div>
   );
 }
+

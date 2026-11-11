@@ -156,7 +156,15 @@ export function StopCard({
           type="button"
           aria-label={`Remove ${stop.name}`}
           title="Remove stop"
-          onClick={() => onRemove(stop.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(stop.id);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+            }
+          }}
           style={{
             background: 'none',
             border: 'none',

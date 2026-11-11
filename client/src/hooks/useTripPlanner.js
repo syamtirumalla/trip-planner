@@ -144,10 +144,24 @@ export function useTripPlanner() {
 
   /**
    * Removes a stop and creates a 6-second undo toast.
+   * Defensively accepts either (dayId, stopId) or just (stopId).
    */
   const removeStopWithUndo = useCallback(
-    (dayId, stopId) => {
+    (dayIdOrStopId, maybeStopId) => {
       if (!state.itinerary) return;
+
+      let dayId = dayIdOrStopId;
+      let stopId = maybeStopId;
+
+      // If only stopId was provided, automatically find its dayId
+      if (!maybeStopId) {
+        stopId = dayIdOrStopId;
+        const foundDay = state.itinerary.days.find((d) =>
+          d.stops.some((s) => s.id === stopId)
+        );
+        if (!foundDay) return;
+        dayId = foundDay.id;
+      }
 
       const day = state.itinerary.days.find((d) => d.id === dayId);
       if (!day) return;

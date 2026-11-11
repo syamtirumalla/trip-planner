@@ -303,4 +303,123 @@ describe('plannerReducer (Pure State Machine & Stale Response Protection)', () =
     expect(day2.stops[1].startTime).toBe('11:00'); // 10:00 + 60m of s3
     expect(day2.totalDurationMin).toBe(150); // 60 + 90
   });
+
+  it('REGRESSION: correctly removes and restores a stop after REORDER_STOPS with accurate index and recomputed times', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Trip',
+        days: [
+          {
+            id: 'day-1',
+            startTime: '09:00',
+            stops: [
+              { id: 's1', name: 'Stop 1', durationMin: 60, startTime: '09:00' },
+              { id: 's2', name: 'Stop 2', durationMin: 30, startTime: '10:00' },
+              { id: 's3', name: 'Stop 3', durationMin: 45, startTime: '10:30' },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Step 1: Reorder s3 to the top (over s1) -> [s3, s1, s2]
+    const stateAfterReorder = plannerReducer(initialState, {
+      type: 'REORDER_STOPS',
+      payload: { dayId: 'day-1', activeStopId: 's3', overStopId: 's1' },
+    });
+
+    const dayAfterReorder = stateAfterReorder.itinerary.days[0];
+    expect(dayAfterReorder.stops.map((s) => s.id)).toEqual(['s3', 's1', 's2']);
+
+    // Step 2: Remove s1 (which is at index 1 after reorder)
+    const removedIndex = dayAfterReorder.stops.findIndex((s) => s.id === 's1');
+    expect(removedIndex).toBe(1);
+    const removedStop = dayAfterReorder.stops[removedIndex];
+
+    const stateAfterRemove = plannerReducer(stateAfterReorder, {
+      type: 'REMOVE_STOP',
+      payload: { dayId: 'day-1', stopId: 's1' },
+    });
+
+    const dayAfterRemove = stateAfterRemove.itinerary.days[0];
+    expect(dayAfterRemove.stops.map((s) => s.id)).toEqual(['s3', 's2']);
+    expect(dayAfterRemove.stops[0].startTime).toBe('09:00');
+    expect(dayAfterRemove.stops[1].startTime).toBe('09:45'); // 09:00 + 45m of s3
+
+    // Step 3: Undo removal restoring s1 at its previous index (1)
+    const stateAfterUndo = plannerReducer(stateAfterRemove, {
+      type: 'RESTORE_STOP',
+      payload: { dayId: 'day-1', stop: removedStop, index: removedIndex },
+    });
+
+    const dayAfterUndo = stateAfterUndo.itinerary.days[0];
+    expect(dayAfterUndo.stops.map((s) => s.id)).toEqual(['s3', 's1', 's2']);
+    expect(dayAfterUndo.stops[0].startTime).toBe('09:00');
+    expect(dayAfterUndo.stops[1].startTime).toBe('09:45'); // 09:00 + 45m
+    expect(dayAfterUndo.stops[2].startTime).toBe('10:45'); // 09:45 + 60m
+  });
+
+  it('REGRESSION: correctly removes and restores a stop after MOVE_STOP_TO_DAY with accurate index and recomputed times', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Trip',
+        days: [
+          {
+            id: 'day-1',
+            startTime: '09:00',
+            stops: [
+              { id: 's1', name: 'Stop 1', durationMin: 60 },
+              { id: 's2', name: 'Stop 2 (To Move)', durationMin: 45 },
+            ],
+          },
+          {
+            id: 'day-2',
+            startTime: '10:00',
+            stops: [
+              { id: 's3', name: 'Stop 3', durationMin: 30 },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Step 1: Move s2 from day-1 to day-2 -> day-2 has [s3, s2]
+    const stateAfterMove = plannerReducer(initialState, {
+      type: 'MOVE_STOP_TO_DAY',
+      payload: { fromDayId: 'day-1', toDayId: 'day-2', stopId: 's2' },
+    });
+
+    const day2AfterMove = stateAfterMove.itinerary.days[1];
+    expect(day2AfterMove.stops.map((s) => s.id)).toEqual(['s3', 's2']);
+    expect(day2AfterMove.stops[1].startTime).toBe('10:30');
+
+    // Step 2: Remove s2 from day-2
+    const targetIndex = day2AfterMove.stops.findIndex((s) => s.id === 's2');
+    expect(targetIndex).toBe(1);
+    const removedStop = day2AfterMove.stops[targetIndex];
+
+    const stateAfterRemove = plannerReducer(stateAfterMove, {
+      type: 'REMOVE_STOP',
+      payload: { dayId: 'day-2', stopId: 's2' },
+    });
+
+    const day2AfterRemove = stateAfterRemove.itinerary.days[1];
+    expect(day2AfterRemove.stops.map((s) => s.id)).toEqual(['s3']);
+
+    // Step 3: Undo removal restoring s2 into day-2 at index 1
+    const stateAfterUndo = plannerReducer(stateAfterRemove, {
+      type: 'RESTORE_STOP',
+      payload: { dayId: 'day-2', stop: removedStop, index: targetIndex },
+    });
+
+    const day2AfterUndo = stateAfterUndo.itinerary.days[1];
+    expect(day2AfterUndo.stops.map((s) => s.id)).toEqual(['s3', 's2']);
+    expect(day2AfterUndo.stops[0].startTime).toBe('10:00');
+    expect(day2AfterUndo.stops[1].startTime).toBe('10:30');
+    expect(day2AfterUndo.totalDurationMin).toBe(75);
+  });
 });

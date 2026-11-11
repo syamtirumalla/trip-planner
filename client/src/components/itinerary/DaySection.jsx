@@ -154,7 +154,7 @@ export function DaySection({
                   stop={stop}
                   currentDayId={day.id}
                   allDays={allDays}
-                  onRemove={onRemoveStop}
+                  onRemove={(stopId) => onRemoveStop(day.id, stopId)}
                   onMoveToDay={onMoveToDay}
                 />
               ))}
