@@ -1,4 +1,4 @@
-import { useReducer, useRef, useCallback } from 'react';
+import { useReducer, useRef, useCallback, useState } from 'react';
 import { plannerReducer, initialPlannerState } from '../state/plannerReducer.js';
 import {
   startRequest,
@@ -6,12 +6,17 @@ import {
   receiveError,
   cancelRequest,
   dismissWarnings as dismissWarningsAction,
+  removeStop as removeStopAction,
+  restoreStop as restoreStopAction,
+  updateItinerary as updateItineraryAction,
+  resetPlanner,
 } from '../state/plannerActions.js';
 import { PlanResponseSchema } from '../../../shared/schema.js';
 import { generateId } from '../utils/id.js';
 
 export function useTripPlanner() {
   const [state, dispatch] = useReducer(plannerReducer, initialPlannerState);
+  const [toasts, setToasts] = useState([]);
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
 
@@ -21,7 +26,6 @@ export function useTripPlanner() {
   const planTrip = useCallback(async (promptText, simulateHeader = null) => {
     if (!promptText || !promptText.trim()) return;
 
-    // 1. Abort previous in-flight request if any
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -29,7 +33,6 @@ export function useTripPlanner() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // 2. Increment request ID for stale response protection
     requestIdRef.current += 1;
     const currentRequestId = requestIdRef.current;
 
@@ -38,7 +41,6 @@ export function useTripPlanner() {
     try {
       const headers = { 'Content-Type': 'application/json' };
 
-      // Dev-only simulation header: strictly forbidden and omitted in production
       if (!import.meta.env.PROD && simulateHeader) {
         headers['x-simulate'] = simulateHeader;
       }
@@ -52,7 +54,6 @@ export function useTripPlanner() {
 
       const json = await res.json().catch(() => ({}));
 
-      // Check if this request was superseded while awaiting network response
       if (currentRequestId !== requestIdRef.current) {
         return;
       }
@@ -67,7 +68,7 @@ export function useTripPlanner() {
         return;
       }
 
-      // 3. Re-validate server response on the client using shared Zod schema (Never trust the network)
+      // Re-validate server response on the client using shared Zod schema
       const clientValidation = PlanResponseSchema.safeParse(json);
       if (!clientValidation.success) {
         console.error('[Client Validation Failed]:', clientValidation.error);
@@ -82,7 +83,7 @@ export function useTripPlanner() {
 
       const { itinerary, warnings } = clientValidation.data;
 
-      // 4. Assign trusted client-side IDs (crypto.randomUUID) after validation
+      // Assign trusted client-side IDs (crypto.randomUUID) after validation
       const assignedItinerary = {
         ...itinerary,
         id: generateId(),
@@ -98,12 +99,10 @@ export function useTripPlanner() {
 
       dispatch(receiveSuccess(currentRequestId, assignedItinerary, warnings));
     } catch (err) {
-      // If error was triggered by abort controller, don't show an error state
       if (err.name === 'AbortError' || controller.signal.aborted) {
         return;
       }
 
-      // If request is stale, ignore
       if (currentRequestId !== requestIdRef.current) {
         return;
       }
@@ -143,11 +142,79 @@ export function useTripPlanner() {
     dispatch(dismissWarningsAction());
   }, []);
 
+  /**
+   * Removes a stop and creates a 6-second undo toast.
+   * Handles multiple rapid removals gracefully by stacking toasts.
+   */
+  const removeStopWithUndo = useCallback(
+    (dayId, stopId) => {
+      if (!state.itinerary) return;
+
+      const day = state.itinerary.days.find((d) => d.id === dayId);
+      if (!day) return;
+
+      const stopIndex = day.stops.findIndex((s) => s.id === stopId);
+      if (stopIndex === -1) return;
+
+      const removedStop = day.stops[stopIndex];
+
+      dispatch(removeStopAction(dayId, stopId));
+
+      const toastId = generateId();
+      const newToast = {
+        id: toastId,
+        stopName: removedStop.name,
+        dayId,
+        stop: removedStop,
+        index: stopIndex,
+      };
+
+      setToasts((prev) => [newToast, ...prev]);
+    },
+    [state.itinerary]
+  );
+
+  /**
+   * Undoes a stop removal and dismisses its toast.
+   */
+  const undoRemoval = useCallback((toast) => {
+    dispatch(restoreStopAction(toast.dayId, toast.stop, toast.index));
+    setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+  }, []);
+
+  /**
+   * Dismisses an individual toast.
+   */
+  const dismissToast = useCallback((toastId) => {
+    setToasts((prev) => prev.filter((t) => t.id !== toastId));
+  }, []);
+
+  /**
+   * Updates itinerary (e.g. after reordering).
+   */
+  const updateItinerary = useCallback((newItinerary) => {
+    dispatch(updateItineraryAction(newItinerary));
+  }, []);
+
+  /**
+   * Resets planner to clean initial state.
+   */
+  const reset = useCallback(() => {
+    dispatch(resetPlanner());
+    setToasts([]);
+  }, []);
+
   return {
     state,
+    toasts,
     planTrip,
     cancel,
     retry,
     dismissWarnings,
+    removeStop: removeStopWithUndo,
+    undoRemoval,
+    dismissToast,
+    updateItinerary,
+    reset,
   };
 }

@@ -5,6 +5,9 @@ export const PLANNER_ACTIONS = {
   CANCEL_REQUEST: 'CANCEL_REQUEST',
   DISMISS_WARNINGS: 'DISMISS_WARNINGS',
   RESET: 'RESET',
+  REMOVE_STOP: 'REMOVE_STOP',
+  RESTORE_STOP: 'RESTORE_STOP',
+  UPDATE_ITINERARY: 'UPDATE_ITINERARY',
 };
 
 export function startRequest(requestId, prompt) {
@@ -44,5 +47,26 @@ export function dismissWarnings() {
 export function resetPlanner() {
   return {
     type: PLANNER_ACTIONS.RESET,
+  };
+}
+
+export function removeStop(dayId, stopId) {
+  return {
+    type: PLANNER_ACTIONS.REMOVE_STOP,
+    payload: { dayId, stopId },
+  };
+}
+
+export function restoreStop(dayId, stop, index) {
+  return {
+    type: PLANNER_ACTIONS.RESTORE_STOP,
+    payload: { dayId, stop, index },
+  };
+}
+
+export function updateItinerary(itinerary) {
+  return {
+    type: PLANNER_ACTIONS.UPDATE_ITINERARY,
+    payload: { itinerary },
   };
 }

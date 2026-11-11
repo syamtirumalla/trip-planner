@@ -1,0 +1,172 @@
+import React, { useState } from 'react';
+
+const TYPE_CONFIG = {
+  food: { color: '#ea580c', bg: '#fff7ed', border: '#fdba74', icon: '🍽️' },
+  sight: { color: '#2563eb', bg: '#eff6ff', border: '#93c5fd', icon: '🏛️' },
+  activity: { color: '#16a34a', bg: '#f0fdf4', border: '#86efac', icon: '🚶' },
+  transit: { color: '#475569', bg: '#f8fafc', border: '#cbd5e1', icon: '🚇' },
+  rest: { color: '#7c3aed', bg: '#faf5ff', border: '#d8b4fe', icon: '☕' },
+};
+
+export function StopCard({ stop, onRemove }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const typeStyle = TYPE_CONFIG[stop.type] || TYPE_CONFIG.sight;
+
+  return (
+    <article
+      style={{
+        background: 'var(--bg-primary)',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)',
+        marginBottom: '10px',
+        overflow: 'hidden',
+        transition: 'border-color var(--transition), box-shadow var(--transition)',
+      }}
+    >
+      {/* Real button header with aria-expanded */}
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        onClick={() => setIsExpanded((prev) => !prev)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          background: 'none',
+          border: 'none',
+          color: 'inherit',
+          cursor: 'pointer',
+          textAlign: 'left',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+          {/* Start Time Pill */}
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: '700',
+              fontVariantNumeric: 'tabular-nums',
+              color: 'var(--primary)',
+              background: 'var(--primary-light)',
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-sm)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {stop.startTime || '09:00'}
+          </span>
+
+          {/* Name & Type Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+              {stop.name}
+            </span>
+
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                backgroundColor: typeStyle.bg,
+                color: typeStyle.color,
+                border: `1px solid ${typeStyle.border}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>{typeStyle.icon}</span>
+              {stop.type}
+            </span>
+          </div>
+        </div>
+
+        {/* Right side: Duration, Remove Action, Expand Chevron */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            {stop.durationMin}m
+          </span>
+
+          {/* Remove Button */}
+          <button
+            type="button"
+            aria-label={`Remove ${stop.name}`}
+            title="Remove stop"
+            onClick={(e) => {
+              e.stopPropagation(); // Do not toggle expand on remove
+              onRemove(stop.id);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '4px 6px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '14px',
+              lineHeight: 1,
+              transition: 'color var(--transition)',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+          >
+            ✕
+          </button>
+
+          {/* Expand indicator chevron */}
+          <span
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              display: 'inline-block',
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform var(--transition)',
+            }}
+          >
+            ▼
+          </span>
+        </div>
+      </button>
+
+      {/* Expanded Details Section */}
+      {isExpanded && (
+        <div
+          style={{
+            padding: '12px 16px 16px 16px',
+            borderTop: '1px solid var(--border-color)',
+            background: 'var(--bg-secondary)',
+            fontSize: '13px',
+            lineHeight: 1.5,
+          }}
+        >
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            {stop.description}
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12px' }}>
+            {stop.costEstimate && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#16a34a' }}>
+                <span style={{ fontWeight: '600' }}>Cost:</span>
+                <span>{stop.costEstimate}</span>
+              </div>
+            )}
+
+            {stop.tip && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', color: '#b45309' }}>
+                <span style={{ fontWeight: '600' }}>Tip:</span>
+                <span>{stop.tip}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}

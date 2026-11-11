@@ -141,4 +141,76 @@ describe('plannerReducer (Pure State Machine & Stale Response Protection)', () =
     const resetState = plannerReducer(modifiedState, resetPlanner());
     expect(resetState).toEqual(initialPlannerState);
   });
+
+  it('removes a stop and dynamically recomputes remaining stop start times', () => {
+    const initialStateWithStops = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Rome',
+        days: [
+          {
+            id: 'day-1',
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              { id: 'stop-1', name: 'Colosseum', durationMin: 60, startTime: '09:00' },
+              { id: 'stop-2', name: 'Forum', durationMin: 90, startTime: '10:00' },
+              { id: 'stop-3', name: 'Pantheon', durationMin: 45, startTime: '11:30' },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Remove stop-2 (Forum, 90m)
+    const state = plannerReducer(
+      initialStateWithStops,
+      { type: 'REMOVE_STOP', payload: { dayId: 'day-1', stopId: 'stop-2' } }
+    );
+
+    const remainingStops = state.itinerary.days[0].stops;
+    expect(remainingStops).toHaveLength(2);
+    expect(remainingStops[0].name).toBe('Colosseum');
+    expect(remainingStops[0].startTime).toBe('09:00');
+
+    // Pantheon was previously 11:30, now starts at 10:00 (09:00 + 60m Colosseum)
+    expect(remainingStops[1].name).toBe('Pantheon');
+    expect(remainingStops[1].startTime).toBe('10:00');
+  });
+
+  it('restores a stop at its original position and recomputes times', () => {
+    const stateAfterRemoval = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Rome',
+        days: [
+          {
+            id: 'day-1',
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              { id: 'stop-1', name: 'Colosseum', durationMin: 60, startTime: '09:00' },
+              { id: 'stop-3', name: 'Pantheon', durationMin: 45, startTime: '10:00' },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Restore stop-2 at index 1
+    const restoredStop = { id: 'stop-2', name: 'Forum', durationMin: 90 };
+    const state = plannerReducer(
+      stateAfterRemoval,
+      { type: 'RESTORE_STOP', payload: { dayId: 'day-1', stop: restoredStop, index: 1 } }
+    );
+
+    const stops = state.itinerary.days[0].stops;
+    expect(stops).toHaveLength(3);
+    expect(stops[1].name).toBe('Forum');
+    expect(stops[1].startTime).toBe('10:00');
+    expect(stops[2].name).toBe('Pantheon');
+    expect(stops[2].startTime).toBe('11:30');
+  });
 });

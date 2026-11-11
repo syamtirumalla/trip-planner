@@ -6,11 +6,24 @@ import { LoadingSkeleton } from './components/LoadingSkeleton.jsx';
 import { ErrorAlert } from './components/ErrorAlert.jsx';
 import { WarningsBanner } from './components/WarningsBanner.jsx';
 import { EmptyState } from './components/EmptyState.jsx';
-import { MinimalSuccessView } from './components/MinimalSuccessView.jsx';
+import { ItineraryView } from './components/itinerary/ItineraryView.jsx';
 import { DevSimulator } from './components/DevSimulator.jsx';
+import { ToastContainer } from './components/Toast.jsx';
 
 export default function App() {
-  const { state, planTrip, cancel, retry, dismissWarnings } = useTripPlanner();
+  const {
+    state,
+    toasts,
+    planTrip,
+    cancel,
+    retry,
+    dismissWarnings,
+    removeStop,
+    undoRemoval,
+    dismissToast,
+    reset,
+  } = useTripPlanner();
+
   const [activeSimulation, setActiveSimulation] = useState(null);
 
   const handlePlanSubmit = (promptText) => {
@@ -28,7 +41,7 @@ export default function App() {
             </h1>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
-            Transform free-form travel ideas into structured, validated day-by-day itineraries.
+            Transform free-form travel ideas into structured, interactive day-by-day itineraries.
           </p>
         </header>
 
@@ -59,10 +72,21 @@ export default function App() {
         )}
 
         {state.status === 'success' && state.itinerary && (
-          <MinimalSuccessView itinerary={state.itinerary} />
+          <ItineraryView
+            itinerary={state.itinerary}
+            onRemoveStop={removeStop}
+            onReset={reset}
+          />
         )}
 
         {state.status === 'idle' && <EmptyState type="initial" />}
+
+        {/* Undo Toasts (6-second countdown) */}
+        <ToastContainer
+          toasts={toasts}
+          onUndo={undoRemoval}
+          onDismiss={dismissToast}
+        />
       </div>
     </ErrorBoundary>
   );
