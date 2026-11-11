@@ -9,8 +9,11 @@ import { EmptyState } from './components/EmptyState.jsx';
 import { ItineraryView } from './components/itinerary/ItineraryView.jsx';
 import { DevSimulator } from './components/DevSimulator.jsx';
 import { ToastContainer } from './components/Toast.jsx';
+import { useTheme } from './hooks/useTheme.js';
+import { ThemeToggle } from './components/ThemeToggle.jsx';
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
   const {
     state,
     toasts,
@@ -60,24 +63,38 @@ export default function App() {
           minHeight: '100vh',
         }}
       >
-        <header style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: isMobile ? '24px' : '28px' }} aria-hidden="true">
-              ✈️
-            </span>
-            <h1
-              style={{
-                fontSize: isMobile ? '22px' : '28px',
-                fontWeight: '800',
-                letterSpacing: '-0.5px',
-              }}
-            >
-              AI Trip Planner
-            </h1>
+        <header
+          style={{
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ flex: 1, minWidth: '220px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: isMobile ? '24px' : '28px' }} aria-hidden="true">
+                ✈️
+              </span>
+              <h1
+                style={{
+                  fontSize: isMobile ? '22px' : '28px',
+                  fontWeight: '800',
+                  letterSpacing: '-0.5px',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                AI Trip Planner
+              </h1>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+              Transform free-form travel ideas into structured, interactive day-by-day itineraries.
+            </p>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
-            Transform free-form travel ideas into structured, interactive day-by-day itineraries.
-          </p>
+
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </header>
 
         {/* Development-only failure simulation panel (strictly hidden in production) */}
