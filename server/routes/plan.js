@@ -6,6 +6,7 @@ import { buildPlanPrompt, buildRepairPrompt } from '../services/promptBuilder.js
 import { extractJson } from '../services/jsonExtractor.js';
 import { validateAndSalvage } from '../services/validator.js';
 import { getSimulatedModelOutput } from '../services/simulator.js';
+import { checkRequestedDaysMatch } from '../services/semanticCheck.js';
 
 const router = express.Router();
 
@@ -76,6 +77,12 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Semantic check: if the user prompt requested N days and fewer were produced, add warning
+    const durationWarning = checkRequestedDaysMatch(prompt, salvageResult.itinerary.days.length);
+    if (durationWarning) {
+      salvageResult.warnings.unshift(durationWarning);
+    }
+
     return res.json(salvageResult);
   } catch (err) {
     const errorCode = err.code || ERROR_CODES.UPSTREAM;
@@ -95,4 +102,3 @@ router.post('/', async (req, res) => {
 });
 
 export default router;
-

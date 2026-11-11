@@ -23,8 +23,8 @@ export async function callGemini(prompt, options = {}) {
     options.timeoutMs ||
     parseInt(process.env.MODEL_TIMEOUT_MS, 10) ||
     45000;
-  const maxOutputTokens =
-    parseInt(process.env.MAX_OUTPUT_TOKENS, 10) || 4096;
+  let maxOutputTokens =
+    parseInt(process.env.MAX_OUTPUT_TOKENS, 10) || 8192;
 
   if (!apiKey || !apiKey.trim()) {
     const error = new Error(USER_FRIENDLY_ERROR_MESSAGES[ERROR_CODES.UPSTREAM]);
@@ -35,7 +35,6 @@ export async function callGemini(prompt, options = {}) {
   }
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
   const thinkingConfig = { thinkingLevel: 'low' };
 
   const payload = {
@@ -78,11 +77,11 @@ export async function callGemini(prompt, options = {}) {
 
         const elapsedMs = Date.now() - attemptStart;
 
-        console.log(
-          `[Gemini Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | Thinking config: applied (${thinkingConfig.thinkingLevel}) | Model: ${model}`
-        );
-
         if (!response.ok) {
+          console.log(
+            `[Gemini Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | Model: ${model}`
+          );
+
           const rawErrorData = await response.json().catch(() => ({}));
           console.error(
             `[Gemini Client Error] Upstream HTTP ${response.status} on attempt ${attempt}:`,
@@ -109,7 +108,27 @@ export async function callGemini(prompt, options = {}) {
         }
 
         const data = await response.json();
-        const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const candidate = data?.candidates?.[0];
+        const candidateText = candidate?.content?.parts?.[0]?.text;
+        const finishReason = candidate?.finishReason || 'UNKNOWN';
+
+        console.log(
+          `[Gemini Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | finish_reason: ${finishReason} | Thinking config: applied (${thinkingConfig.thinkingLevel}) | Model: ${model}`
+        );
+
+        if (finishReason === 'MAX_TOKENS') {
+          console.warn('[Gemini Client Warning]: Output truncated due to MAX_TOKENS limit.');
+          if (attempt < maxAttempts) {
+            maxOutputTokens = Math.min(maxOutputTokens * 2, 16384);
+            payload.generationConfig.maxOutputTokens = maxOutputTokens;
+            console.log(`[Gemini Client]: Retrying with increased maxOutputTokens (${maxOutputTokens})...`);
+            continue;
+          }
+          const error = new Error('Model output was truncated due to output token limit.');
+          error.code = ERROR_CODES.MALFORMED;
+          error.status = 502;
+          throw error;
+        }
 
         if (!candidateText || !candidateText.trim()) {
           console.error('[Gemini Client Error]: Model produced empty candidate output.');
@@ -152,6 +171,7 @@ export async function callGemini(prompt, options = {}) {
 
 /**
  * Calls Groq chat completions API using plain fetch with OpenAI-compatible JSON mode.
+ * Enforces reasoning_effort: 'low' to prevent reasoning token bloat.
  */
 export async function callGroq(prompt, options = {}) {
   const apiKey = process.env.GROQ_API_KEY;
@@ -160,8 +180,8 @@ export async function callGroq(prompt, options = {}) {
     options.timeoutMs ||
     parseInt(process.env.MODEL_TIMEOUT_MS, 10) ||
     45000;
-  const maxOutputTokens =
-    parseInt(process.env.MAX_OUTPUT_TOKENS, 10) || 4096;
+  let maxOutputTokens =
+    parseInt(process.env.MAX_OUTPUT_TOKENS, 10) || 8192;
 
   if (!apiKey || !apiKey.trim()) {
     const error = new Error(USER_FRIENDLY_ERROR_MESSAGES[ERROR_CODES.UPSTREAM]);
@@ -188,6 +208,7 @@ export async function callGroq(prompt, options = {}) {
     ],
     response_format: { type: 'json_object' },
     max_tokens: maxOutputTokens,
+    reasoning_effort: 'low',
     temperature: 0.4,
   };
 
@@ -216,11 +237,11 @@ export async function callGroq(prompt, options = {}) {
 
         const elapsedMs = Date.now() - attemptStart;
 
-        console.log(
-          `[Groq Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | JSON mode: json_object | Model: ${model}`
-        );
-
         if (!response.ok) {
+          console.log(
+            `[Groq Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | Model: ${model}`
+          );
+
           const rawErrorData = await response.json().catch(() => ({}));
           console.error(
             `[Groq Client Error] Upstream HTTP ${response.status} on attempt ${attempt}:`,
@@ -247,7 +268,27 @@ export async function callGroq(prompt, options = {}) {
         }
 
         const data = await response.json();
-        const candidateText = data?.choices?.[0]?.message?.content;
+        const choice = data?.choices?.[0];
+        const candidateText = choice?.message?.content;
+        const finishReason = choice?.finish_reason || 'unknown';
+
+        console.log(
+          `[Groq Client] Model call attempt ${attempt} finished in ${elapsedMs}ms | Status: ${response.status} | finish_reason: ${finishReason} | JSON mode: json_object | Model: ${model}`
+        );
+
+        if (finishReason === 'length') {
+          console.warn(`[Groq Client Warning]: Output truncated by max_tokens limit (${payload.max_tokens}).`);
+          if (attempt < maxAttempts) {
+            maxOutputTokens = Math.min(maxOutputTokens * 2, 16384);
+            payload.max_tokens = maxOutputTokens;
+            console.log(`[Groq Client]: Retrying with increased max_tokens (${maxOutputTokens})...`);
+            continue;
+          }
+          const error = new Error('Model output was truncated due to output token limit.');
+          error.code = ERROR_CODES.MALFORMED;
+          error.status = 502;
+          throw error;
+        }
 
         if (!candidateText || !candidateText.trim()) {
           console.error('[Groq Client Error]: Model produced empty candidate output.');

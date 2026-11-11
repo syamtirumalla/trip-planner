@@ -23,14 +23,21 @@ You must respond with a single, strictly valid JSON object matching this specifi
   ]
 }
 
-CRITICAL RULES:
-1. Provide only the JSON object. Do not wrap in markdown or add conversational pleasantries.
-2. Provide a balanced schedule of 3-4 quality stops per day.
-3. Keep descriptions and tips concise (1 sentence each) to ensure fast, reliable response generation.
-4. Ensure realistic stop durations (${DURATION_LIMITS.MIN}-${DURATION_LIMITS.MAX} minutes) and logical geographical sequencing.
-5. Every day must have at least one valid stop.
-6. "type" must be strictly one of: ${STOP_TYPES.join(', ')}.
-7. "startTime" must be in 24-hour "HH:MM" format (e.g. "09:00", "10:30").
+CRITICAL SCHEDULING & STRUCTURE RULES:
+1. Provide ONLY the raw JSON object. Do not wrap in markdown or add conversational pleasantries.
+2. EXACT DAY COUNT: If the user request specifies or implies a number of days (e.g., "4 days", "a week", "3-day"), you MUST return EXACTLY that many day objects in the "days" array. Never omit or combine days.
+3. FULL-DAY ITINERARY: Each day must contain at least 3 quality stops covering a realistic full day (about 8 to 10 hours total from morning to evening).
+4. MEAL CHRONOLOGY:
+   - Schedule morning food/café stops in the morning.
+   - Schedule lunch before mid-afternoon (between 12:00 and 14:00).
+   - Dinner or evening dining must be the final stop of the day.
+5. NO FILLER STOPS: Avoid passive filler stops like "Hotel Rest", "Relax at Hotel", "Check-in", or "Free Time". Every stop must be an active, worthwhile destination or culinary experience.
+6. TRANSIT RULES: Do NOT make "transit" the first stop of a day unless the user specifically mentions arriving or traveling on that day.
+7. Realistic stop durations (${DURATION_LIMITS.MIN}-${DURATION_LIMITS.MAX} minutes) and logical geographical sequencing within each day.
+8. Concise descriptions: Keep descriptions and tips concise (1 sentence each) for fast, reliable generation.
+9. Every day must have at least one valid stop.
+10. "type" must be strictly one of: ${STOP_TYPES.join(', ')}.
+11. "startTime" must be in 24-hour "HH:MM" format (e.g. "09:00", "08:30").
 `;
 
 export function buildPlanPrompt(userPrompt) {
@@ -67,4 +74,3 @@ ${badOutput}
 Please fix the errors above and return the complete, corrected itinerary.
 ${SCHEMA_INSTRUCTION}`;
 }
-

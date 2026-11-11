@@ -126,4 +126,25 @@ describe('Groq Client & Provider Switching', () => {
       expect.anything()
     );
   });
+
+  it('detects truncation on finish_reason length and throws typed error after exhausting retries', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [
+          {
+            finish_reason: 'length',
+            message: { content: '{"title": "Truncated trip", "days": [' },
+          },
+        ],
+      }),
+    });
+
+    await expect(callGroq('test')).rejects.toMatchObject({
+      code: ERROR_CODES.MALFORMED,
+    });
+    // Verifies retry attempt was made with increased tokens
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
 });
