@@ -109,3 +109,4 @@ export function clearSavedItinerary() {
     console.warn('[Auto-Save] Failed to clear saved itinerary:', err);
   }
 }
+

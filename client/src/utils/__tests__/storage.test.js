@@ -135,3 +135,4 @@ describe('LocalStorage Auto-Save & Re-Validation (storage.js)', () => {
     expect(() => clearSavedItinerary()).not.toThrow();
   });
 });
+

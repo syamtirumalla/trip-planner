@@ -78,3 +78,4 @@ describe('reconcileItinerary (ID persistence across refinement)', () => {
     expect(reconciled.days[0].stops[0].id).toBeDefined();
   });
 });
+
