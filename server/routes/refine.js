@@ -1,7 +1,7 @@
 import express from 'express';
 import { RefineRequestSchema } from '../../shared/schema.js';
 import { ERROR_CODES } from '../../shared/constants.js';
-import { callModel } from '../services/modelClient.js';
+import { callModel, USER_FRIENDLY_ERROR_MESSAGES } from '../services/modelClient.js';
 import { buildRefinePrompt, buildRepairPrompt } from '../services/promptBuilder.js';
 import { extractJson } from '../services/jsonExtractor.js';
 import { validateAndSalvage } from '../services/validator.js';
@@ -78,10 +78,14 @@ router.post('/', async (req, res) => {
     const errorCode = err.code || ERROR_CODES.UPSTREAM;
     const statusCode = err.status || getHttpStatusForError(errorCode);
 
+    const clientMessage =
+      USER_FRIENDLY_ERROR_MESSAGES[errorCode] ||
+      'An unexpected error occurred during itinerary refinement.';
+
     return res.status(statusCode).json({
       error: {
         code: errorCode,
-        message: err.message || 'An unexpected error occurred during itinerary refinement.',
+        message: clientMessage,
       },
     });
   }
