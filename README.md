@@ -4,9 +4,8 @@ Describe a trip in plain English (for example *"4 days in Kyoto in April, love f
 
 You can expand stop cards (cost estimate and tip), drag stops to reorder them with times recalculated instantly, remove stops with a 6-second undo, move stops between days, refine the plan with follow-up prompts ("make day 2 more relaxed"), and reload the page without losing your trip. It works on mobile (day tabs below 768px) and has a dark mode.
 
-<!-- SCREENSHOT: after adding docs/screenshot.png, replace this comment with:
-![App screenshot](docs/screenshot.png)
--->
+![Prompt and summary](docs/screenshot-form.png)
+![Itinerary with expanded stops](docs/screenshot-itinerary.png)
 
 <!-- DEMO VIDEO: after uploading, replace this comment with:
 **Demo video:** [Watch the walkthrough](PASTE_LINK_HERE)
