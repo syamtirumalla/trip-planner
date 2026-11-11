@@ -1,4 +1,4 @@
-import { useReducer, useRef, useCallback, useState } from 'react';
+import { useReducer, useRef, useCallback, useState, useEffect } from 'react';
 import { plannerReducer, initialPlannerState } from '../state/plannerReducer.js';
 import {
   startRequest,
@@ -11,16 +11,41 @@ import {
   reorderStops as reorderStopsAction,
   moveStopToDay as moveStopToDayAction,
   updateItinerary as updateItineraryAction,
+  restoreSavedTrip,
   resetPlanner,
 } from '../state/plannerActions.js';
 import { PlanResponseSchema } from '../../../shared/schema.js';
 import { generateId } from '../utils/id.js';
+import {
+  saveItinerary,
+  loadSavedItinerary,
+  clearSavedItinerary,
+} from '../utils/storage.js';
 
 export function useTripPlanner() {
   const [state, dispatch] = useReducer(plannerReducer, initialPlannerState);
   const [toasts, setToasts] = useState([]);
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
+
+  /**
+   * Restore auto-saved trip on reload.
+   */
+  useEffect(() => {
+    const saved = loadSavedItinerary();
+    if (saved && saved.itinerary) {
+      dispatch(restoreSavedTrip(saved.itinerary, saved.prompt));
+    }
+  }, []);
+
+  /**
+   * Auto-save itinerary changes to versioned localStorage.
+   */
+  useEffect(() => {
+    if (state.status === 'success' && state.itinerary) {
+      saveItinerary(state.itinerary, state.prompt);
+    }
+  }, [state.itinerary, state.status, state.prompt]);
 
   /**
    * Dispatches planning request to /api/plan with AbortController and stale response guarding.
@@ -224,9 +249,19 @@ export function useTripPlanner() {
   }, []);
 
   /**
+   * Clears saved trip from localStorage and resets planner.
+   */
+  const clearSavedTrip = useCallback(() => {
+    clearSavedItinerary();
+    dispatch(resetPlanner());
+    setToasts([]);
+  }, []);
+
+  /**
    * Resets planner to clean initial state.
    */
   const reset = useCallback(() => {
+    clearSavedItinerary();
     dispatch(resetPlanner());
     setToasts([]);
   }, []);
@@ -244,6 +279,7 @@ export function useTripPlanner() {
     reorderStops,
     moveStopToDay,
     updateItinerary,
+    clearSavedTrip,
     reset,
   };
 }

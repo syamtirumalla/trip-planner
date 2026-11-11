@@ -8,6 +8,7 @@ export function ItineraryView({
   onRemoveStop,
   onReorderStops,
   onMoveToDay,
+  onClearSavedTrip,
   onReset,
 }) {
   const [isMobile, setIsMobile] = useState(() =>
@@ -113,19 +114,62 @@ export function ItineraryView({
           </span>
         </div>
 
-        {/* Global Trip Meta: total days and total stops */}
+        {/* Global Trip Meta: total days, total stops, auto-save status & clear action */}
         <div
           style={{
             display: 'flex',
-            gap: '16px',
-            marginTop: '12px',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '14px',
+            paddingTop: '12px',
+            borderTop: '1px solid var(--border-color)',
             fontSize: '13px',
             color: 'var(--text-muted)',
-            flexWrap: 'wrap',
           }}
         >
-          <span>📅 {itinerary.days.length} {itinerary.days.length === 1 ? 'day' : 'days'}</span>
-          <span>📍 {totalStops} total stops</span>
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>📅 {itinerary.days.length} {itinerary.days.length === 1 ? 'day' : 'days'}</span>
+            <span>📍 {totalStops} total stops</span>
+            <span
+              style={{
+                fontSize: '12px',
+                color: '#16a34a',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontWeight: '500',
+              }}
+            >
+              ✓ Saved locally
+            </span>
+          </div>
+
+          {onClearSavedTrip && (
+            <button
+              type="button"
+              onClick={onClearSavedTrip}
+              title="Clear saved trip and start over"
+              style={{
+                minHeight: '36px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                touchAction: 'manipulation',
+              }}
+            >
+              <span>🗑️</span> Clear saved trip
+            </button>
+          )}
         </div>
       </div>
 

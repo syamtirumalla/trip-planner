@@ -23,6 +23,7 @@ export default function App() {
     dismissToast,
     reorderStops,
     moveStopToDay,
+    clearSavedTrip,
     reset,
   } = useTripPlanner();
 
@@ -111,6 +112,7 @@ export default function App() {
             onRemoveStop={removeStop}
             onReorderStops={reorderStops}
             onMoveToDay={moveStopToDay}
+            onClearSavedTrip={clearSavedTrip}
             onReset={reset}
           />
         )}

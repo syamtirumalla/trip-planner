@@ -40,3 +40,4 @@ describe('getNextTabIndex (WAI-ARIA Tab Keyboard Navigation)', () => {
     expect(getNextTabIndex(0, 0, 'ArrowRight')).toBeNull();
   });
 });
+

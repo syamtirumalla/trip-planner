@@ -10,6 +10,7 @@ export const PLANNER_ACTIONS = {
   REORDER_STOPS: 'REORDER_STOPS',
   MOVE_STOP_TO_DAY: 'MOVE_STOP_TO_DAY',
   UPDATE_ITINERARY: 'UPDATE_ITINERARY',
+  RESTORE_SAVED_TRIP: 'RESTORE_SAVED_TRIP',
 };
 
 export function startRequest(requestId, prompt) {
@@ -86,3 +87,11 @@ export function updateItinerary(itinerary) {
     payload: { itinerary },
   };
 }
+
+export function restoreSavedTrip(itinerary, prompt = '') {
+  return {
+    type: PLANNER_ACTIONS.RESTORE_SAVED_TRIP,
+    payload: { itinerary, prompt },
+  };
+}
+

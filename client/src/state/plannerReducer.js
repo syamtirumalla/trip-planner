@@ -220,6 +220,25 @@ export function plannerReducer(state = initialPlannerState, action) {
       };
     }
 
+    case PLANNER_ACTIONS.RESTORE_SAVED_TRIP: {
+      const rawItinerary = action.payload.itinerary;
+      const itineraryWithDerivedTimes = rawItinerary
+        ? {
+            ...rawItinerary,
+            days: (rawItinerary.days || []).map((day) => recomputeTimes(day)),
+          }
+        : null;
+
+      return {
+        ...state,
+        status: 'success',
+        itinerary: itineraryWithDerivedTimes,
+        prompt: action.payload.prompt || '',
+        warnings: [],
+        error: null,
+      };
+    }
+
     case PLANNER_ACTIONS.RESET: {
       return {
         ...initialPlannerState,

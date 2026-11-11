@@ -26,7 +26,7 @@ export const DaySchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be in HH:MM format')
     .default('09:00'),
-  stops: z.array(StopSchema).min(1, 'A day must contain at least one stop'),
+  stops: z.array(StopSchema),
 });
 
 // Full Itinerary schema
