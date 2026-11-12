@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateAndSalvage } from '../services/validator.js';
+import { StopSchema } from '../../shared/schema.js';
 import { ERROR_CODES } from '../../shared/constants.js';
 
 describe('validateAndSalvage', () => {
@@ -180,5 +181,119 @@ describe('validateAndSalvage', () => {
       expect(err.code).toBe(ERROR_CODES.WRONG_SHAPE);
     }
   });
-});
 
+  describe('gapBeforeMin schema bounds & backward compatibility', () => {
+    it('accepts valid gapBeforeMin within [0, 360]', () => {
+      const validStop = {
+        name: 'Evening Dinner',
+        type: 'food',
+        durationMin: 90,
+        gapBeforeMin: 180,
+        description: 'Authentic Kyoto dining',
+      };
+      const parsed = StopSchema.safeParse(validStop);
+      expect(parsed.success).toBe(true);
+      expect(parsed.data.gapBeforeMin).toBe(180);
+    });
+
+    it('defaults gapBeforeMin to 0 when omitted (backward compatibility)', () => {
+      const legacyStop = {
+        name: 'Historic Shrine',
+        type: 'sight',
+        durationMin: 60,
+        description: 'Serene mountain shrine',
+      };
+      const parsed = StopSchema.safeParse(legacyStop);
+      expect(parsed.success).toBe(true);
+      expect(parsed.data.gapBeforeMin).toBe(0);
+    });
+
+    it('rejects negative gapBeforeMin', () => {
+      const invalidStop = {
+        name: 'Invalid Gap Stop',
+        type: 'sight',
+        durationMin: 60,
+        gapBeforeMin: -15,
+        description: 'Should fail validation',
+      };
+      const parsed = StopSchema.safeParse(invalidStop);
+      expect(parsed.success).toBe(false);
+    });
+
+    it('rejects gapBeforeMin exceeding 360 minutes', () => {
+      const invalidStop = {
+        name: 'Excessive Gap Stop',
+        type: 'sight',
+        durationMin: 60,
+        gapBeforeMin: 400,
+        description: 'Should fail validation',
+      };
+      const parsed = StopSchema.safeParse(invalidStop);
+      expect(parsed.success).toBe(false);
+    });
+
+    it('rejects non-integer gapBeforeMin', () => {
+      const invalidStop = {
+        name: 'Float Gap Stop',
+        type: 'sight',
+        durationMin: 60,
+        gapBeforeMin: 45.5,
+        description: 'Should fail validation',
+      };
+      const parsed = StopSchema.safeParse(invalidStop);
+      expect(parsed.success).toBe(false);
+    });
+  });
+
+  describe('validateAndSalvage gapBeforeMin resilience', () => {
+    it('clamps out-of-range gapBeforeMin and defaults invalid types to 0 without dropping the stop', () => {
+      const tripWithOddGaps = {
+        title: 'Gap Clamping Test',
+        days: [
+          {
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              {
+                name: 'Stop with Negative Gap',
+                type: 'sight',
+                durationMin: 60,
+                gapBeforeMin: -60, // Should clamp to 0
+                description: 'Valid stop description',
+              },
+              {
+                name: 'Stop with Huge Gap',
+                type: 'food',
+                durationMin: 90,
+                gapBeforeMin: 9999, // Should clamp to 360
+                description: 'Valid dinner description',
+              },
+              {
+                name: 'Stop with String Gap',
+                type: 'activity',
+                durationMin: 45,
+                gapBeforeMin: 'not a number', // Should default to 0
+                description: 'Valid activity description',
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = validateAndSalvage(tripWithOddGaps);
+      expect(result.itinerary.days[0].stops).toHaveLength(3);
+
+      expect(result.itinerary.days[0].stops[0].name).toBe('Stop with Negative Gap');
+      expect(result.itinerary.days[0].stops[0].gapBeforeMin).toBe(0);
+
+      expect(result.itinerary.days[0].stops[1].name).toBe('Stop with Huge Gap');
+      expect(result.itinerary.days[0].stops[1].gapBeforeMin).toBe(360);
+
+      expect(result.itinerary.days[0].stops[2].name).toBe('Stop with String Gap');
+      expect(result.itinerary.days[0].stops[2].gapBeforeMin).toBe(0);
+
+      // Verify no stops were dropped
+      expect(result.warnings).toHaveLength(0);
+    });
+  });
+});

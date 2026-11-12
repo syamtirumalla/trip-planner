@@ -122,6 +122,9 @@ export function plannerReducer(state = initialPlannerState, action) {
     case PLANNER_ACTIONS.RESTORE_STOP: {
       if (!state.itinerary) return state;
 
+      // Note on timing model: gapBeforeMin stays attached to the stop object itself.
+      // Restoring a removed stop restores its original gapBeforeMin, and recomputeTimes
+      // recalculates downstream start/end times sequentially.
       const { dayId, stop, index } = action.payload;
       const updatedDays = state.itinerary.days.map((day) => {
         if (day.id !== dayId) return day;
@@ -151,6 +154,9 @@ export function plannerReducer(state = initialPlannerState, action) {
     case PLANNER_ACTIONS.REORDER_STOPS: {
       if (!state.itinerary) return state;
 
+      // Design decision: gapBeforeMin stays attached to the stop (moves with it),
+      // rather than anchoring to the index slot. A gap typically represents free time
+      // or preparation preceding that specific event (e.g. relaxing before dinner).
       const { dayId, activeStopId, overStopId } = action.payload;
       if (activeStopId === overStopId) return state;
 
@@ -181,6 +187,8 @@ export function plannerReducer(state = initialPlannerState, action) {
     case PLANNER_ACTIONS.MOVE_STOP_TO_DAY: {
       if (!state.itinerary) return state;
 
+      // Design decision: moving a stop to another day retains the stop's gapBeforeMin,
+      // and recomputeTimes recalculates start times in both origin and destination days.
       const { fromDayId, toDayId, stopId } = action.payload;
       if (fromDayId === toDayId) return state;
 

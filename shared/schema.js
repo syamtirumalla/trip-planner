@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { STOP_TYPES, DURATION_LIMITS, PROMPT_LIMITS, ERROR_CODES } from './constants.js';
+import { STOP_TYPES, DURATION_LIMITS, GAP_LIMITS, PROMPT_LIMITS, ERROR_CODES } from './constants.js';
 
 // Base Stop schema for AI model output validation
 export const StopSchema = z.object({
@@ -13,6 +13,13 @@ export const StopSchema = z.object({
     .int('Duration must be an integer')
     .min(DURATION_LIMITS.MIN, `Duration must be at least ${DURATION_LIMITS.MIN} minutes`)
     .max(DURATION_LIMITS.MAX, `Duration cannot exceed ${DURATION_LIMITS.MAX} minutes`),
+  gapBeforeMin: z
+    .number()
+    .int('Gap must be an integer')
+    .min(GAP_LIMITS.MIN, `Gap must be at least ${GAP_LIMITS.MIN} minutes`)
+    .max(GAP_LIMITS.MAX, `Gap cannot exceed ${GAP_LIMITS.MAX} minutes`)
+    .default(0)
+    .optional(),
   description: z.string().trim().min(1, 'Description is required'),
   costEstimate: z.string().trim().optional(),
   tip: z.string().trim().optional(),
@@ -77,4 +84,3 @@ export const PlanResponseSchema = z.object({
   itinerary: ItinerarySchema,
   warnings: z.array(z.string()).default([]),
 });
-

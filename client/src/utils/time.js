@@ -20,13 +20,13 @@ export function formatDuration(minutes) {
 }
 
 /**
- * Adds minutes to a 24-hour HH:MM time string.
+ * Adds minutes to a 24-hour HH:MM time string with midnight wrap-around.
  *
  * @param {string} timeStr - Time in "HH:MM" format
- * @param {number} minutesToAdd - Minutes to add (positive integer)
+ * @param {number} minutesToAdd - Minutes to add (integer)
  * @returns {string} New time in "HH:MM" format
  */
-export function addMinutesToTime(timeStr, minutesToAdd) {
+export function addMinutesToTime(timeStr, minutesToAdd = 0) {
   const [hStr, mStr] = (timeStr || '09:00').split(':');
   let hours = parseInt(hStr, 10);
   let minutes = parseInt(mStr, 10);
@@ -34,7 +34,16 @@ export function addMinutesToTime(timeStr, minutesToAdd) {
   if (isNaN(hours)) hours = 9;
   if (isNaN(minutes)) minutes = 0;
 
-  const totalMinutes = (hours * 60 + minutes + minutesToAdd) % (24 * 60);
+  const safeMinutesToAdd =
+    typeof minutesToAdd === 'number' && !isNaN(minutesToAdd)
+      ? Math.round(minutesToAdd)
+      : 0;
+
+  let totalMinutes = (hours * 60 + minutes + safeMinutesToAdd) % (24 * 60);
+  if (totalMinutes < 0) {
+    totalMinutes += 24 * 60;
+  }
+
   const newHours = Math.floor(totalMinutes / 60);
   const newMinutes = totalMinutes % 60;
 
@@ -43,33 +52,44 @@ export function addMinutesToTime(timeStr, minutesToAdd) {
 
 /**
  * Pure function: Recomputes derived start times for all stops in a day.
- * Stop start times are derived from day.startTime plus cumulative duration of preceding stops.
- * Also computes total duration for the day.
+ * - Start time of each stop = previous stop's end + its gapBeforeMin (first stop = day.startTime + its gap).
+ * - Total duration for the day remains the total active time (sum of stop durations, excluding gaps).
+ * - Handles crossing midnight with standard 24-hour time wrap-around.
  *
  * @param {object} day - Day object containing startTime ("HH:MM") and stops array
- * @returns {object} New day object with updated stops (including calculated startTime) and totalDurationMin
+ * @returns {object} New day object with updated stops (derived start/end times) and totalDurationMin
  */
 export function recomputeTimes(day) {
   if (!day) return null;
 
-  const baseStartTime = day.startTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(day.startTime)
-    ? day.startTime
-    : '09:00';
+  const baseStartTime =
+    day.startTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(day.startTime)
+      ? day.startTime
+      : '09:00';
 
   const stops = Array.isArray(day.stops) ? day.stops : [];
-  let cumulativeMinutes = 0;
+  let currentTime = baseStartTime;
+  let totalActiveMinutes = 0;
 
   const updatedStops = stops.map((stop) => {
-    const stopDuration = typeof stop.durationMin === 'number' && stop.durationMin > 0
-      ? stop.durationMin
-      : 30;
+    const stopDuration =
+      typeof stop.durationMin === 'number' && stop.durationMin > 0
+        ? stop.durationMin
+        : 30;
 
-    const stopStartTime = addMinutesToTime(baseStartTime, cumulativeMinutes);
-    cumulativeMinutes += stopDuration;
-    const stopEndTime = addMinutesToTime(baseStartTime, cumulativeMinutes);
+    const gap =
+      typeof stop.gapBeforeMin === 'number' && !isNaN(stop.gapBeforeMin)
+        ? Math.min(360, Math.max(0, Math.round(stop.gapBeforeMin)))
+        : 0;
+
+    const stopStartTime = addMinutesToTime(currentTime, gap);
+    const stopEndTime = addMinutesToTime(stopStartTime, stopDuration);
+    currentTime = stopEndTime;
+    totalActiveMinutes += stopDuration;
 
     return {
       ...stop,
+      gapBeforeMin: gap,
       startTime: stopStartTime,
       endTime: stopEndTime,
     };
@@ -79,6 +99,6 @@ export function recomputeTimes(day) {
     ...day,
     startTime: baseStartTime,
     stops: updatedStops,
-    totalDurationMin: cumulativeMinutes,
+    totalDurationMin: totalActiveMinutes,
   };
 }

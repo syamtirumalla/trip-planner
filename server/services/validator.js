@@ -50,7 +50,20 @@ export function validateAndSalvage(rawObj) {
     const validStops = [];
 
     day.stops.forEach((stop, stopIndex) => {
-      const parsedStop = StopSchema.safeParse(stop);
+      // Sanitize gapBeforeMin: invalid or out-of-range gapBeforeMin must NOT drop the stop
+      let candidateStop = stop;
+      if (stop && typeof stop === 'object') {
+        let sanitizedGap = 0;
+        if (typeof stop.gapBeforeMin === 'number' && !isNaN(stop.gapBeforeMin)) {
+          sanitizedGap = Math.min(360, Math.max(0, Math.round(stop.gapBeforeMin)));
+        }
+        candidateStop = {
+          ...stop,
+          gapBeforeMin: sanitizedGap,
+        };
+      }
+
+      const parsedStop = StopSchema.safeParse(candidateStop);
       if (parsedStop.success) {
         validStops.push(parsedStop.data);
       } else {
@@ -119,4 +132,3 @@ export function validateAndSalvage(rawObj) {
     warnings,
   };
 }
-

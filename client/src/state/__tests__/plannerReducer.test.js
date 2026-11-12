@@ -256,6 +256,112 @@ describe('plannerReducer (Pure State Machine & Stale Response Protection)', () =
     expect(stops[2].endTime).toBe('11:15');
   });
 
+  it('keeps gapBeforeMin attached to the stop during REORDER_STOPS and recomputes times', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Kyoto Timing Test',
+        days: [
+          {
+            id: 'day-1',
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              { id: 'stop-a', name: 'Morning Shrine', durationMin: 60, gapBeforeMin: 0 },
+              { id: 'stop-b', name: 'Lunch Spot', durationMin: 60, gapBeforeMin: 0 },
+              { id: 'stop-c', name: 'Dinner with Gap', durationMin: 90, gapBeforeMin: 120 },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Before reorder:
+    // stop-a: 09:00 - 10:00
+    // stop-b: 10:00 - 11:00
+    // stop-c: 11:00 + 120m gap = 13:00 - 14:30
+
+    // Move stop-c between stop-a and stop-b (active: stop-c, over: stop-b)
+    const stateAfterReorder = plannerReducer(initialState, {
+      type: 'REORDER_STOPS',
+      payload: { dayId: 'day-1', activeStopId: 'stop-c', overStopId: 'stop-b' },
+    });
+
+    const stops = stateAfterReorder.itinerary.days[0].stops;
+    expect(stops[0].id).toBe('stop-a');
+    expect(stops[0].startTime).toBe('09:00');
+    expect(stops[0].endTime).toBe('10:00');
+
+    // stop-c moves into 2nd position, keeping its 120m gap attached
+    expect(stops[1].id).toBe('stop-c');
+    expect(stops[1].gapBeforeMin).toBe(120);
+    expect(stops[1].startTime).toBe('12:00'); // 10:00 + 120m = 12:00
+    expect(stops[1].endTime).toBe('13:30');
+
+    // stop-b follows stop-c directly (gap 0)
+    expect(stops[2].id).toBe('stop-b');
+    expect(stops[2].gapBeforeMin).toBe(0);
+    expect(stops[2].startTime).toBe('13:30');
+    expect(stops[2].endTime).toBe('14:30');
+
+    // Total duration stays strictly active time (60 + 90 + 60 = 210m)
+    expect(stateAfterReorder.itinerary.days[0].totalDurationMin).toBe(210);
+  });
+
+  it('keeps gapBeforeMin attached when moving a stop between days', () => {
+    const initialState = {
+      ...initialPlannerState,
+      status: 'success',
+      itinerary: {
+        title: 'Multi-day Gap Move Test',
+        days: [
+          {
+            id: 'day-1',
+            label: 'Day 1',
+            startTime: '09:00',
+            stops: [
+              { id: 's1', name: 'Sight 1', durationMin: 60, gapBeforeMin: 0 },
+              { id: 's2', name: 'Dinner Event', durationMin: 90, gapBeforeMin: 180 },
+            ],
+          },
+          {
+            id: 'day-2',
+            label: 'Day 2',
+            startTime: '10:00',
+            stops: [
+              { id: 's3', name: 'Morning Walk', durationMin: 60, gapBeforeMin: 0 },
+            ],
+          },
+        ],
+      },
+    };
+
+    const state = plannerReducer(initialState, {
+      type: 'MOVE_STOP_TO_DAY',
+      payload: { fromDayId: 'day-1', toDayId: 'day-2', stopId: 's2' },
+    });
+
+    const day1 = state.itinerary.days[0];
+    const day2 = state.itinerary.days[1];
+
+    expect(day1.stops).toHaveLength(1);
+    expect(day1.stops[0].name).toBe('Sight 1');
+    expect(day1.totalDurationMin).toBe(60);
+
+    expect(day2.stops).toHaveLength(2);
+    // s3: 10:00 -> 11:00
+    expect(day2.stops[0].startTime).toBe('10:00');
+    expect(day2.stops[0].endTime).toBe('11:00');
+
+    // s2 moved to day 2: retains gapBeforeMin: 180 -> starts at 11:00 + 180m = 14:00 -> 15:30
+    expect(day2.stops[1].id).toBe('s2');
+    expect(day2.stops[1].gapBeforeMin).toBe(180);
+    expect(day2.stops[1].startTime).toBe('14:00');
+    expect(day2.stops[1].endTime).toBe('15:30');
+    expect(day2.totalDurationMin).toBe(150);
+  });
+
   it('moves a stop between days and recomputes times for both days', () => {
     const initialState = {
       ...initialPlannerState,

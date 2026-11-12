@@ -1,4 +1,4 @@
-import { STOP_TYPES, DURATION_LIMITS } from '../../shared/constants.js';
+import { STOP_TYPES, DURATION_LIMITS, GAP_LIMITS } from '../../shared/constants.js';
 
 const SCHEMA_INSTRUCTION = `
 You must respond with a single, strictly valid JSON object matching this specification:
@@ -14,6 +14,7 @@ You must respond with a single, strictly valid JSON object matching this specifi
           "name": "Location or Activity Name",
           "type": one of [${STOP_TYPES.map((t) => `"${t}"`).join(', ')}],
           "durationMin": integer between ${DURATION_LIMITS.MIN} and ${DURATION_LIMITS.MAX},
+          "gapBeforeMin": optional integer between ${GAP_LIMITS.MIN} and ${GAP_LIMITS.MAX} (idle/free-time minutes before this stop starts; defaults to 0),
           "description": "Concise 1-sentence description",
           "costEstimate": "e.g., Free, $15, €20 (optional)",
           "tip": "Short insider tip (optional)"
@@ -31,13 +32,18 @@ CRITICAL SCHEDULING & STRUCTURE RULES:
    - Schedule morning food/café stops in the morning.
    - Schedule lunch before mid-afternoon (between 12:00 and 14:00).
    - Dinner or evening dining must be the final stop of the day.
-5. NO FILLER STOPS: Avoid passive filler stops like "Hotel Rest", "Relax at Hotel", "Check-in", or "Free Time". Every stop must be an active, worthwhile destination or culinary experience.
-6. TRANSIT RULES: Do NOT make "transit" the first stop of a day unless the user specifically mentions arriving or traveling on that day.
-7. Realistic stop durations (${DURATION_LIMITS.MIN}-${DURATION_LIMITS.MAX} minutes) and logical geographical sequencing within each day.
-8. Concise descriptions: Keep descriptions and tips concise (1 sentence each) for fast, reliable generation.
-9. Every day must have at least one valid stop.
-10. "type" must be strictly one of: ${STOP_TYPES.join(', ')}.
-11. "startTime" must be in 24-hour "HH:MM" format (e.g. "09:00", "08:30").
+5. REALISTIC TIMING & GAPS (gapBeforeMin):
+   - You may set "gapBeforeMin" (integer between 0 and 360, default 0) so stops land at realistic times throughout the day.
+   - For example, leave a gap after afternoon sightseeing stops (e.g. 60-180 minutes of free time or rest) so dinner lands around 18:30-20:00 and night activities occur in the evening.
+   - Breakfast and lunch should need little or no gap (keep gapBeforeMin at 0).
+   - Keep gapBeforeMin at 0 when no idle time is needed between consecutive stops.
+6. NO FILLER STOPS: Avoid passive filler stops like "Hotel Rest", "Relax at Hotel", "Check-in", or "Free Time". Every stop must be an active, worthwhile destination or culinary experience (use gapBeforeMin for idle breaks instead).
+7. TRANSIT RULES: Do NOT make "transit" the first stop of a day unless the user specifically mentions arriving or traveling on that day.
+8. Realistic stop durations (${DURATION_LIMITS.MIN}-${DURATION_LIMITS.MAX} minutes) and logical geographical sequencing within each day.
+9. Concise descriptions: Keep descriptions and tips concise (1 sentence each) for fast, reliable generation.
+10. Every day must have at least one valid stop.
+11. "type" must be strictly one of: ${STOP_TYPES.join(', ')}.
+12. "startTime" must be in 24-hour "HH:MM" format (e.g. "09:00", "08:30").
 `;
 
 export function buildPlanPrompt(userPrompt) {
@@ -59,6 +65,8 @@ USER INSTRUCTION FOR MODIFICATION:
 "${instruction}"
 
 Please return the COMPLETE updated itinerary reflecting this change, preserving all unchanged days and stops while updating the modified items.
+CRITICAL FOR REFINEMENT: Preserve existing "gapBeforeMin" values on unchanged stops unless the user explicitly asks to change the schedule or timing.
+
 ${SCHEMA_INSTRUCTION}`;
 }
 

@@ -7,6 +7,11 @@ export const DURATION_LIMITS = {
   MAX: 480,
 };
 
+export const GAP_LIMITS = {
+  MIN: 0,
+  MAX: 360,
+};
+
 export const PROMPT_LIMITS = {
   MIN_LENGTH: 3,
   MAX_LENGTH: 1000,
@@ -20,4 +25,3 @@ export const ERROR_CODES = {
   UPSTREAM: 'UPSTREAM',
   RATE_LIMITED: 'RATE_LIMITED',
 };
-
