@@ -213,6 +213,7 @@ Because of the first two problems, the provider is swappable. Switching takes on
 - **No component click tests**, as described above.
 - **Free-tier limits.** Both providers enforce rate limits, and model availability changes without notice.
 - **Local only.** Saving uses the browser's localStorage. There are no accounts, no database, and no deployment.
+- **Simple schedule model.** Each stop has a duration and an optional gap before it, so evening stops can start later in the day. Times are derived from these, so there are no fixed clock times. A gap stays attached to its stop when you reorder, so dragging a dinner earlier carries its gap with it. Opening hours and travel time aren’t modelled.
 
 ---
 
