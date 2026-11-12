@@ -6,6 +6,7 @@ import { buildRefinePrompt, buildRepairPrompt } from '../services/promptBuilder.
 import { extractJson } from '../services/jsonExtractor.js';
 import { validateAndSalvage } from '../services/validator.js';
 import { getSimulatedModelOutput } from '../services/simulator.js';
+import { adjustDinnerSchedule } from '../services/scheduleFix.js';
 
 const router = express.Router();
 
@@ -73,6 +74,9 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // 4. Post-processing schedule fix: adjust dinner gap if earlier than 17:30
+    salvageResult.itinerary = adjustDinnerSchedule(salvageResult.itinerary);
+
     return res.json(salvageResult);
   } catch (err) {
     const errorCode = err.code || ERROR_CODES.UPSTREAM;
@@ -92,4 +96,3 @@ router.post('/', async (req, res) => {
 });
 
 export default router;
-

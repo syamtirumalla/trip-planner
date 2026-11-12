@@ -7,6 +7,7 @@ import { extractJson } from '../services/jsonExtractor.js';
 import { validateAndSalvage } from '../services/validator.js';
 import { getSimulatedModelOutput } from '../services/simulator.js';
 import { checkRequestedDaysMatch } from '../services/semanticCheck.js';
+import { adjustDinnerSchedule } from '../services/scheduleFix.js';
 
 const router = express.Router();
 
@@ -76,6 +77,9 @@ router.post('/', async (req, res) => {
         throw finalError;
       }
     }
+
+    // 5. Post-processing schedule fix: adjust dinner gap if earlier than 17:30
+    salvageResult.itinerary = adjustDinnerSchedule(salvageResult.itinerary);
 
     // Semantic check: if the user prompt requested N days and fewer were produced, add warning
     const durationWarning = checkRequestedDaysMatch(prompt, salvageResult.itinerary.days.length);
